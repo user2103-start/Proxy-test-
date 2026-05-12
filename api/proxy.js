@@ -1,115 +1,131 @@
-const COURSE_API = "https://course.nexttoppers.com";
-const TEST_API = "https://test.nexttoppers.com";
-const AUTH_API = "https://auth.nexttoppers.com";
+const NT = "https://course.nexttoppers.com";
+const AUTH = "https://auth.nexttoppers.com";
 
-// ========================================
-// ADD YOUR TOKEN + USER ID HERE
-// ========================================
+const APP_ID = "1772100600";
+const DEVICE_ID = "ae2fa506-85ca-418d-a449-ec5068dc6665";
 
-const DEFAULT_TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYzZiYWYwMGYtOWVjYy00MmY4LWI4YTQtZjZhNDg1OWJjYTI4IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg1NzE1MDcsImV4cCI6MTc4MTE2MzUwN30.W4QEqz0uPGmeifcJpn_5g4xW5V65ni_W6v5VCeZy4tw";
-const DEFAULT_USER_ID = "ADD_YOUR_USER_ID_HERE";
+// fallback (only if no login)
+const FALLBACK_TOKEN = "Bearer YOUR_FALLBACK_TOKEN";
+const FALLBACK_USER_ID = "3245033";
 
-// ========================================
+function headers(token, userId) {
+  return {
+    accept: "application/json, text/plain, */*",
+    app_id: APP_ID,
+    authorization: token,
+    content-type: "application/json",
+    origin: "https://missionjeet.in",
+    referer: "https://missionjeet.in/",
+    platform: "3",
+    user_id: userId,
+    "user-agent": "Mozilla/5.0",
+    version: "1"
+  };
+}
 
-module.exports = async function handler(req, res) {
-
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  if (req.method === "OPTIONS") return res.status(200).end();
 
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, user_id, app_id, platform, version"
-  );
+  const { action } = req.query;
+  const body = req.body || {};
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  // ---------------- AUTH STEP ----------------
+
+  // Send OTP
+  if (action === "sendotp") {
+    const r = await fetch(`${AUTH}/auth/send-otp`, {
+      method: "POST",
+      headers: headers("", ""),
+      body: JSON.stringify({
+        mobile: body.mobile,
+        device_id: DEVICE_ID
+      })
+    });
+    return res.json(await r.json());
   }
 
-  try {
-
-    const { target, endpoint } = req.query;
-
-    if (!target || !endpoint) {
-      return res.status(400).json({
-        success: false,
-        error: "target and endpoint required"
-      });
-    }
-
-    let BASE = "";
-
-    if (target === "course") {
-      BASE = COURSE_API;
-    }
-
-    else if (target === "test") {
-      BASE = TEST_API;
-    }
-
-    else if (target === "auth") {
-      BASE = AUTH_API;
-    }
-
-    else {
-      return res.status(400).json({
-        success: false,
-        error: "invalid target"
-      });
-    }
-
-    const url = `${BASE}/${endpoint}`;
-
-    const headers = {
-
-      "accept": "application/json, text/plain, */*",
-
-      "content-type": "application/json",
-
-      // Uses request header OR fallback token
-      "authorization":
-        req.headers.authorization || DEFAULT_TOKEN,
-
-      "user_id":
-        req.headers.user_id || DEFAULT_USER_ID,
-
-      "app_id":
-        req.headers.app_id || "1772100600",
-
-      "platform":
-        req.headers.platform || "3",
-
-      "version":
-        req.headers.version || "1",
-
-      "origin": "https://missionjeet.in",
-
-      "referer": "https://missionjeet.in/",
-
-      "user-agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"
-
-    };
-
-    const response = await fetch(url, {
-      method: req.method,
-      headers,
-
-      body:
-        req.method === "GET"
-          ? undefined
-          : JSON.stringify(req.body || {})
+  // Verify OTP
+  if (action === "verifyotp") {
+    const r = await fetch(`${AUTH}/auth/verify-otp`, {
+      method: "POST",
+      headers: headers("", ""),
+      body: JSON.stringify({
+        mobile: body.mobile,
+        otp: body.otp,
+        device_id: DEVICE_ID
+      })
     });
 
-    const data = await response.json();
+    const data = await r.json();
 
-    return res.status(response.status).json(data);
-
-  } catch (err) {
-
-    return res.status(500).json({
-      success: false,
-      error: err.message
+    return res.json({
+      success: data.success,
+      token: data.data?.token || null,
+      user_id: data.data?.user_id || null,
+      raw: data
     });
-
   }
-};
+
+  // ---------------- COURSE API ----------------
+
+  if (action === "course") {
+    const r = await fetch(`${NT}/course/course-details`, {
+      method: "POST",
+      headers: headers(
+        req.headers["x-token"] || FALLBACK_TOKEN,
+        req.headers["x-user"] || FALLBACK_USER_ID
+      ),
+      body: JSON.stringify({
+        course_id: body.course_id,
+        parent_id: "0"
+      })
+    });
+
+    return res.json(await r.json());
+  }
+
+  // ---------------- CONTENT API ----------------
+
+  if (action === "content") {
+    const r = await fetch(`${NT}/course/all-content`, {
+      method: "POST",
+      headers: headers(
+        req.headers["x-token"] || FALLBACK_TOKEN,
+        req.headers["x-user"] || FALLBACK_USER_ID
+      ),
+      body: JSON.stringify({
+        course_id: body.course_id,
+        folder_id: body.folder_id || "0",
+        limit: "1000",
+        page: "1",
+        parent_course_id: body.parent_course_id || "0"
+      })
+    });
+
+    return res.json(await r.json());
+  }
+
+  // ---------------- VIDEO API ----------------
+
+  if (action === "video") {
+    const { content_id, course_id } = req.query;
+
+    const r = await fetch(
+      `${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`,
+      {
+        method: "GET",
+        headers: headers(
+          req.headers["x-token"] || FALLBACK_TOKEN,
+          req.headers["x-user"] || FALLBACK_USER_ID
+        )
+      }
+    );
+
+    return res.json(await r.json());
+  }
+
+  return res.status(400).json({ error: "Invalid action" });
+}
