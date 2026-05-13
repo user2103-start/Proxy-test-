@@ -1,11 +1,19 @@
 {
-  "name": "proxy-api",
+  "name": "mission-jeet-proxy",
   "version": "1.0.0",
-  "main": "api/proxy.js",
-  "dependencies": {
-    "express": "^4.18.2",
-    "axios": "^1.6.0",
-    "cors": "^2.8.5",
-    "cookie-parser": "^1.4.6"
-  }
+  "description": "Mission JEET proxy website with Live Classes and auto-update",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve public",
+    "build": "echo 'No build needed'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.0.0",
+    "vercel": "^32.0.0"
+  },
+  "keywords": ["proxy", "vercel", "mission-jeet"],
+  "author": "",
+  "license": "MIT"
 }
