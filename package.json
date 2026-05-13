@@ -1,19 +1,11 @@
 {
-  "name": "nexttoppers-proxy",
-  "version": "2.0.0",
-  "description": "Complete API Proxy for NextToppers with JWT auto-refresh",
+  "name": "proxy-api",
+  "version": "1.0.0",
   "main": "api/proxy.js",
-  "scripts": {
-    "start": "node api/proxy.js",
-    "dev": "nodemon api/proxy.js"
-  },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5",
     "axios": "^1.6.0",
+    "cors": "^2.8.5",
     "cookie-parser": "^1.4.6"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.1"
   }
 }
