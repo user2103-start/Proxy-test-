@@ -1,0 +1,19 @@
+{
+  "name": "complete-api-proxy",
+  "version": "1.0.0",
+  "description": "Complete API Proxy with JWT auto-refresh, Courses, Tests, Live Classes",
+  "main": "api/proxy.js",
+  "scripts": {
+    "start": "node api/proxy.js",
+    "dev": "nodemon api/proxy.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "axios": "^1.6.0",
+    "cookie-parser": "^1.4.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
