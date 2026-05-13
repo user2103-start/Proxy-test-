@@ -1,7 +1,7 @@
 {
-  "name": "complete-api-proxy",
-  "version": "1.0.0",
-  "description": "Complete API Proxy with JWT auto-refresh, Courses, Tests, Live Classes",
+  "name": "nexttoppers-proxy",
+  "version": "2.0.0",
+  "description": "Complete API Proxy for NextToppers with JWT auto-refresh",
   "main": "api/proxy.js",
   "scripts": {
     "start": "node api/proxy.js",
