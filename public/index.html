@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NextToppers Proxy Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="p-8 bg-gray-50">
+    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-2xl font-bold mb-6 text-center">NextToppers Proxy Test</h1>
+        
+        <div id="status" class="mb-4 p-3 rounded text-sm"></div>
+        
+        <div class="space-y-4">
+            <input id="mobile" placeholder="Mobile Number" class="w-full p-3 border rounded-lg">
+            <button onclick="sendOTP()" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600">
+                Send OTP
+            </button>
+            <input id="otp" placeholder="OTP" class="w-full p-3 border rounded-lg">
+            <button onclick="verifyOTP()" class="w-full bg-green-500 text-white p-3 rounded-lg hover:bg-green-600">
+                Verify OTP
+            </button>
+        </div>
+        
+        <div id="response" class="mt-6 p-4 bg-gray-100 rounded-lg max-h-96 overflow-auto hidden"></div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/proxy'; // Tera domain ke saath
+        
+        function showStatus(msg, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = msg;
+            status.className = `mb-4 p-3 rounded text-sm ${type === 'error' ? 'bg-red-100 text-red-800' : 
+                                type === 'success' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`;
+        }
+        
+        function showResponse(data) {
+            document.getElementById('response').innerHTML = 
+                `<pre class="text-xs">${JSON.stringify(data, null, 2)}</pre>`;
+            document.getElementById('response').classList.remove('hidden');
+        }
+        
+        async function sendOTP() {
+            const mobile = document.getElementById('mobile').value;
+            if (!mobile) return showStatus('Mobile number required', 'error');
+            
+            showStatus('Sending OTP...');
+            
+            try {
+                const res = await fetch(`${API_BASE}?action=send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile })
+                });
+                const data = await res.json();
+                showStatus(data.success ? 'OTP sent!' : 'Failed', data.success ? 'success' : 'error');
+                showResponse(data);
+            } catch (error) {
+                showStatus('Network error: ' + error.message, 'error');
+            }
+        }
+        
+        async function verifyOTP() {
+            const mobile = document.getElementById('mobile').value;
+            const otp = document.getElementById('otp').value;
+            if (!mobile || !otp) return showStatus('Mobile & OTP required', 'error');
+            
+            showStatus('Verifying...');
+            
+            try {
+                const res = await fetch(`${API_BASE}?action=verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile, otp })
+                });
+                const data = await res.json();
+                showStatus(data.success ? 'Login Success!' : 'Failed', data.success ? 'success' : 'error');
+                showResponse(data);
+            } catch (error) {
+                showStatus('Network error: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
