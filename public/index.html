@@ -1,84 +1,144 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>NextToppers Proxy Test</title>
+    <title>NextToppers Proxy - All APIs</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-8 bg-gray-50">
-    <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
-        <h1 class="text-2xl font-bold mb-6 text-center">NextToppers Proxy Test</h1>
-        
-        <div id="status" class="mb-4 p-3 rounded text-sm"></div>
-        
-        <div class="space-y-4">
-            <input id="mobile" placeholder="Mobile Number" class="w-full p-3 border rounded-lg">
-            <button onclick="sendOTP()" class="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600">
-                Send OTP
-            </button>
-            <input id="otp" placeholder="OTP" class="w-full p-3 border rounded-lg">
-            <button onclick="verifyOTP()" class="w-full bg-green-500 text-white p-3 rounded-lg hover:bg-green-600">
-                Verify OTP
-            </button>
+<body class="p-8 bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl border">
+            <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-8 text-center">
+                🎓 NextToppers Proxy
+            </h1>
+            
+            <div id="status" class="mb-8 p-4 rounded-xl font-semibold text-sm hidden"></div>
+            
+            <!-- AUTH SECTION -->
+            <div class="mb-12 p-6 bg-blue-50 rounded-xl border-l-4 border-blue-500">
+                <h2 class="text-2xl font-bold mb-4">🔐 Login</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input id="mobile" type="tel" placeholder="📱 8381901694" maxlength="10" class="p-4 border rounded-xl">
+                    <input id="otp" type="number" placeholder="🔑 6-digit OTP" maxlength="6" class="p-4 border rounded-xl">
+                </div>
+                <div class="grid grid-cols-2 gap-4 mt-4">
+                    <button onclick="sendOTP()" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-xl font-bold">📤 Send OTP</button>
+                    <button onclick="verifyOTP()" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-xl font-bold">✅ Verify OTP</button>
+                </div>
+            </div>
+
+            <!-- COURSE SECTION -->
+            <div class="mb-12 p-6 bg-green-50 rounded-xl border-l-4 border-green-500">
+                <h2 class="text-2xl font-bold mb-4">📚 Course APIs</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <input id="course_id" placeholder="Course ID" class="p-3 border rounded-xl">
+                    <input id="folder_id" placeholder="Folder ID (0)" value="0" class="p-3 border rounded-xl">
+                    <input id="content_id" placeholder="Content ID" class="p-3 border rounded-xl">
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                    <button onclick="getCourse()" class="bg-purple-500 hover:bg-purple-600 text-white p-3 rounded-xl">📖 Course</button>
+                    <button onclick="getContent()" class="bg-indigo-500 hover:bg-indigo-600 text-white p-3 rounded-xl">📂 Content</button>
+                    <button onclick="getVideo()" class="bg-orange-500 hover:bg-orange-600 text-white p-3 rounded-xl">🎥 Video</button>
+                    <button onclick="getLive()" class="bg-red-500 hover:bg-red-600 text-white p-3 rounded-xl">📺 Live</button>
+                </div>
+            </div>
+
+            <!-- TEST SECTION -->
+            <div class="p-6 bg-yellow-50 rounded-xl border-l-4 border-yellow-500">
+                <h2 class="text-2xl font-bold mb-4">📝 Test APIs</h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <input id="test_id" placeholder="Test ID" class="p-3 border rounded-xl">
+                    <button onclick="testConnection()" class="bg-gray-500 hover:bg-gray-600 text-white p-3 rounded-xl font-bold">🔍 Test Proxy</button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <button onclick="getTestList()" class="bg-pink-500 hover:bg-pink-600 text-white p-3 rounded-xl">📋 Test List</button>
+                    <button onclick="getTestInfo()" class="bg-teal-500 hover:bg-teal-600 text-white p-3 rounded-xl">ℹ️ Test Info</button>
+                    <button onclick="getTestData()" class="bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-xl">❓ Test Data</button>
+                </div>
+            </div>
+
+            <div id="response" class="mt-8 p-6 bg-gray-900 text-white rounded-xl max-h-96 overflow-auto hidden">
+                <h3 class="font-bold mb-3 text-lg">📋 API Response:</h3>
+                <pre id="response-text" class="text-sm bg-gray-800 p-4 rounded-lg"></pre>
+            </div>
         </div>
-        
-        <div id="response" class="mt-6 p-4 bg-gray-100 rounded-lg max-h-96 overflow-auto hidden"></div>
     </div>
 
     <script>
-        const API_BASE = '/api/proxy'; // Tera domain ke saath
-        
+        const API_BASE = '/api/proxy';
+
         function showStatus(msg, type = 'info') {
-            const status = document.getElementById('status');
-            status.textContent = msg;
-            status.className = `mb-4 p-3 rounded text-sm ${type === 'error' ? 'bg-red-100 text-red-800' : 
-                                type === 'success' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`;
+            const el = document.getElementById('status');
+            el.textContent = msg;
+            el.className = `mb-8 p-4 rounded-xl font-semibold text-sm ${type === 'success' ? 'bg-green-100 border-green-500 text-green-800 border-l-4' : 
+                                                                              type === 'error' ? 'bg-red-100 border-red-500 text-red-800 border-l-4' : 
+                                                                              'bg-blue-100 border-blue-500 text-blue-800 border-l-4'}`;
+            el.classList.remove('hidden');
         }
-        
+
+        async function apiCall(action, body = {}, extraParams = '') {
+            try {
+                showStatus(`${action.toUpperCase()} Loading... ⏳`, 'info');
+                const url = `${API_BASE}?action=${action}${extraParams}`;
+                
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await res.json();
+                showResponse(data);
+                
+                if (res.ok) {
+                    showStatus(`${action.toUpperCase()} Success! ✅`, 'success');
+                } else {
+                    showStatus(`${action.toUpperCase()} Failed ❌`, 'error');
+                }
+                return data;
+            } catch (error) {
+                showStatus(`Network Error: ${error.message}`, 'error');
+                showResponse({ error: error.message });
+            }
+        }
+
         function showResponse(data) {
-            document.getElementById('response').innerHTML = 
-                `<pre class="text-xs">${JSON.stringify(data, null, 2)}</pre>`;
+            document.getElementById('response-text').textContent = JSON.stringify(data, null, 2);
             document.getElementById('response').classList.remove('hidden');
+            document.getElementById('response').scrollIntoView({ behavior: 'smooth' });
         }
-        
-        async function sendOTP() {
-            const mobile = document.getElementById('mobile').value;
-            if (!mobile) return showStatus('Mobile number required', 'error');
-            
-            showStatus('Sending OTP...');
-            
-            try {
-                const res = await fetch(`${API_BASE}?action=send-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mobile })
-                });
-                const data = await res.json();
-                showStatus(data.success ? 'OTP sent!' : 'Failed', data.success ? 'success' : 'error');
-                showResponse(data);
-            } catch (error) {
-                showStatus('Network error: ' + error.message, 'error');
-            }
+
+        // AUTH
+        async function sendOTP() { await apiCall('send-otp', { mobile: document.getElementById('mobile').value }); }
+        async function verifyOTP() { 
+            await apiCall('verify-otp', { 
+                mobile: document.getElementById('mobile').value, 
+                otp: document.getElementById('otp').value 
+            }); 
         }
-        
-        async function verifyOTP() {
-            const mobile = document.getElementById('mobile').value;
-            const otp = document.getElementById('otp').value;
-            if (!mobile || !otp) return showStatus('Mobile & OTP required', 'error');
-            
-            showStatus('Verifying...');
-            
-            try {
-                const res = await fetch(`${API_BASE}?action=verify-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ mobile, otp })
-                });
-                const data = await res.json();
-                showStatus(data.success ? 'Login Success!' : 'Failed', data.success ? 'success' : 'error');
-                showResponse(data);
-            } catch (error) {
-                showStatus('Network error: ' + error.message, 'error');
-            }
+
+        // COURSE
+        async function getCourse() { await apiCall('course', { course_id: document.getElementById('course_id').value }); }
+        async function getContent() { await apiCall('content', { 
+            course_id: document.getElementById('course_id').value, 
+            folder_id: document.getElementById('folder_id').value 
+        }); }
+        async function getVideo() { 
+            const content_id = document.getElementById('content_id').value;
+            const course_id = document.getElementById('course_id').value;
+            await apiCall(`video`, {}, `&content_id=${content_id}&course_id=${course_id}`);
+        }
+        async function getLive() { await apiCall('live', { course_id: document.getElementById('course_id').value }); }
+
+        // TESTS
+        async function testConnection() { await apiCall('test'); }
+        async function getTestList() { await apiCall('test-list', { course_id: document.getElementById('course_id').value }); }
+        async function getTestInfo() { 
+            const test_id = document.getElementById('test_id').value;
+            await apiCall('test-info', {}, `&test_id=${test_id}`);
+        }
+        async function getTestData() { 
+            const test_id = document.getElementById('test_id').value;
+            await apiCall('test-data', {}, `&test_id=${test_id}`);
         }
     </script>
 </body>
