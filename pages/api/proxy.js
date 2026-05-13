@@ -18,7 +18,7 @@ const FIREBASE_CONFIG = {
     authDomain: "piewala-web.firebaseapp.com"
 };
 
-// Session storage (use Redis for production)
+// Session storage
 const sessions = new Map();
 
 // ============ JWT HELPER FUNCTIONS ============
@@ -56,6 +56,34 @@ async function refreshAccessToken(refreshToken) {
     }
 }
 
+// ============ AUTH MIDDLEWARE ============
+async function authenticate(req, res, next) {
+    const sessionId = req.cookies.sessionId;
+    const session = sessions.get(sessionId);
+    
+    if (!session) {
+        return res.status(401).json({ error: "Please login first", code: "UNAUTHORIZED" });
+    }
+    
+    if (isTokenExpired(session.accessToken)) {
+        const refreshResult = await refreshAccessToken(session.refreshToken);
+        if (refreshResult.success) {
+            session.accessToken = refreshResult.accessToken;
+            session.refreshToken = refreshResult.refreshToken || session.refreshToken;
+            session.lastUsed = Date.now();
+            sessions.set(sessionId, session);
+        } else {
+            sessions.delete(sessionId);
+            res.clearCookie('sessionId');
+            return res.status(401).json({ error: "Session expired, please login again", code: "SESSION_EXPIRED" });
+        }
+    }
+    
+    req.session = session;
+    req.sessionId = sessionId;
+    next();
+}
+
 // ============ AUTH ENDPOINTS ============
 
 // Login - Send OTP
@@ -66,6 +94,8 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(400).json({ error: "Phone number required" });
         }
         
+        console.log(`📱 Login request for: ${phoneNumber}`);
+        
         const response = await axios.post(`${DELTA_SERVER}/api/pw/login`, {
             phoneNumber,
             username: phoneNumber
@@ -73,14 +103,17 @@ app.post('/api/auth/login', async (req, res) => {
         
         res.json(response.data);
     } catch (error) {
+        console.error('Login error:', error.response?.data || error.message);
         res.status(500).json({ error: error.response?.data?.message || error.message });
     }
 });
 
-// Verify OTP - Creates session
+// Verify OTP
 app.post('/api/auth/verify', async (req, res) => {
     try {
         const { phoneNumber, otp } = req.body;
+        
+        console.log(`🔐 Verify request for: ${phoneNumber}, OTP: ${otp}`);
         
         const response = await axios.post(`${DELTA_SERVER}/api/pw/verify`, {
             phoneNumber,
@@ -103,8 +136,10 @@ app.post('/api/auth/verify', async (req, res) => {
                 httpOnly: true,
                 secure: true,
                 sameSite: 'none',
-                maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+                maxAge: 30 * 24 * 60 * 60 * 1000
             });
+            
+            console.log(`✅ User logged in: ${phoneNumber}`);
             
             res.json({
                 success: true,
@@ -115,57 +150,35 @@ app.post('/api/auth/verify', async (req, res) => {
             res.status(401).json({ error: response.data.message || "Invalid OTP" });
         }
     } catch (error) {
+        console.error('Verify error:', error.response?.data || error.message);
         res.status(500).json({ error: error.response?.data?.message || error.message });
     }
 });
 
 // Get session status
-app.get('/api/auth/me', async (req, res) => {
-    const sessionId = req.cookies.sessionId;
-    const session = sessions.get(sessionId);
-    
-    if (!session) {
-        return res.status(401).json({ authenticated: false });
-    }
-    
-    // Update last used
-    session.lastUsed = Date.now();
-    sessions.set(sessionId, session);
-    
-    const decoded = decodeJWT(session.accessToken);
-    const isExpired = isTokenExpired(session.accessToken);
-    
+app.get('/api/auth/me', authenticate, async (req, res) => {
+    const decoded = decodeJWT(req.session.accessToken);
     res.json({
         authenticated: true,
-        user: session.user,
+        user: req.session.user,
         tokenExpiry: decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : null,
-        isExpired,
-        phoneNumber: session.phoneNumber
+        phoneNumber: req.session.phoneNumber
     });
 });
 
 // Refresh token
-app.post('/api/auth/refresh', async (req, res) => {
-    const sessionId = req.cookies.sessionId;
-    const session = sessions.get(sessionId);
-    
-    if (!session || !session.refreshToken) {
-        return res.status(401).json({ error: "No session found" });
-    }
-    
-    const result = await refreshAccessToken(session.refreshToken);
+app.post('/api/auth/refresh', authenticate, async (req, res) => {
+    const result = await refreshAccessToken(req.session.refreshToken);
     
     if (result.success) {
-        session.accessToken = result.accessToken;
-        session.refreshToken = result.refreshToken || session.refreshToken;
-        session.lastUsed = Date.now();
-        sessions.set(sessionId, session);
+        req.session.accessToken = result.accessToken;
+        req.session.refreshToken = result.refreshToken || req.session.refreshToken;
+        req.session.lastUsed = Date.now();
+        sessions.set(req.sessionId, req.session);
         
         res.json({ success: true });
     } else {
-        sessions.delete(sessionId);
-        res.clearCookie('sessionId');
-        res.status(401).json({ error: "Session expired, please login again" });
+        res.status(401).json({ error: "Refresh failed" });
     }
 });
 
@@ -179,40 +192,13 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ success: true });
 });
 
-// ============ MIDDLEWARE for Authenticated Requests ============
-async function authenticate(req, res, next) {
-    const sessionId = req.cookies.sessionId;
-    const session = sessions.get(sessionId);
-    
-    if (!session) {
-        return res.status(401).json({ error: "Please login first" });
-    }
-    
-    // Check if token expired
-    if (isTokenExpired(session.accessToken)) {
-        // Try to refresh
-        const refreshResult = await refreshAccessToken(session.refreshToken);
-        if (refreshResult.success) {
-            session.accessToken = refreshResult.accessToken;
-            session.refreshToken = refreshResult.refreshToken || session.refreshToken;
-            sessions.set(sessionId, session);
-        } else {
-            sessions.delete(sessionId);
-            res.clearCookie('sessionId');
-            return res.status(401).json({ error: "Session expired, please login again" });
-        }
-    }
-    
-    req.session = session;
-    req.sessionId = sessionId;
-    next();
-}
-
 // ============ COURSE APIs ============
 
 // Course details
 app.post('/api/course/details', authenticate, async (req, res) => {
     try {
+        console.log(`📚 Course details request:`, req.body);
+        
         const response = await axios.post(`${NEXTTOPERS_API}/course/course-details`, req.body, {
             headers: {
                 'Authorization': `Bearer ${req.session.accessToken}`,
@@ -224,13 +210,16 @@ app.post('/api/course/details', authenticate, async (req, res) => {
         });
         res.json(response.data);
     } catch (error) {
+        console.error('Course details error:', error.response?.data || error.message);
         res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
     }
 });
 
-// All content (including live classes)
+// All content
 app.post('/api/course/content', authenticate, async (req, res) => {
     try {
+        console.log(`📂 Content request:`, req.body);
+        
         const response = await axios.post(`${NEXTTOPERS_API}/course/all-content`, req.body, {
             headers: {
                 'Authorization': `Bearer ${req.session.accessToken}`,
@@ -242,15 +231,61 @@ app.post('/api/course/content', authenticate, async (req, res) => {
         });
         res.json(response.data);
     } catch (error) {
+        console.error('Content error:', error.response?.data || error.message);
         res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
     }
 });
 
-// Content details
+// Content details - FIXED VERSION
 app.get('/api/course/content-details', authenticate, async (req, res) => {
     try {
+        const { content_id, course_id, contentId, id } = req.query;
+        const finalContentId = content_id || contentId || id;
+        
+        console.log(`🎥 Content details request - content_id: ${finalContentId}, course_id: ${course_id || '152'}`);
+        
+        if (!finalContentId) {
+            return res.status(400).json({ error: "content_id is required" });
+        }
+
         const response = await axios.get(`${NEXTTOPERS_API}/course/content-details`, {
-            params: req.query,
+            params: {
+                content_id: finalContentId,
+                course_id: course_id || "152"
+            },
+            headers: {
+                'Authorization': `Bearer ${req.session.accessToken}`,
+                'app_id': '1772100600',
+                'platform': '3',
+                'version': '1',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log(`✅ Content details fetched successfully`);
+        res.json(response.data);
+    } catch (error) {
+        console.error('❌ Content details error:', error.response?.data || error.message);
+        res.status(error.response?.status || 500).json({ 
+            error: error.response?.data?.message || error.message,
+            status: error.response?.status
+        });
+    }
+});
+
+// Also support path parameter format
+app.get('/api/course/content-details/:contentId', authenticate, async (req, res) => {
+    try {
+        const { contentId } = req.params;
+        const { course_id = "152" } = req.query;
+        
+        console.log(`🎥 Content details (path param) - contentId: ${contentId}`);
+        
+        const response = await axios.get(`${NEXTTOPERS_API}/course/content-details`, {
+            params: {
+                content_id: contentId,
+                course_id: course_id
+            },
             headers: {
                 'Authorization': `Bearer ${req.session.accessToken}`,
                 'app_id': '1772100600',
@@ -258,9 +293,11 @@ app.get('/api/course/content-details', authenticate, async (req, res) => {
                 'version': '1'
             }
         });
+        
         res.json(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
+        console.error('Content details error:', error.message);
+        res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
 
@@ -269,7 +306,12 @@ app.get('/api/course/content-details', authenticate, async (req, res) => {
 // Get test instructions
 app.get('/api/test/instructions/:testId', authenticate, async (req, res) => {
     try {
-        const response = await axios.get(`${TEST_API}/test/get-test-instructions?test_id=${req.params.testId}`, {
+        const { testId } = req.params;
+        
+        console.log(`📝 Test instructions for: ${testId}`);
+        
+        const response = await axios.get(`${TEST_API}/test/get-test-instructions`, {
+            params: { test_id: testId },
             headers: {
                 'Authorization': `Bearer ${req.session.accessToken}`,
                 'app_id': '1772100600',
@@ -277,16 +319,23 @@ app.get('/api/test/instructions/:testId', authenticate, async (req, res) => {
                 'version': '1'
             }
         });
+        
         res.json(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
+        console.error('Test instructions error:', error.message);
+        res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
 
 // Get test data
 app.get('/api/test/data/:testId', authenticate, async (req, res) => {
     try {
-        const response = await axios.get(`${TEST_API}/test/get-test-data?test_id=${req.params.testId}`, {
+        const { testId } = req.params;
+        
+        console.log(`📊 Test data for: ${testId}`);
+        
+        const response = await axios.get(`${TEST_API}/test/get-test-data`, {
+            params: { test_id: testId },
             headers: {
                 'Authorization': `Bearer ${req.session.accessToken}`,
                 'app_id': '1772100600',
@@ -294,18 +343,22 @@ app.get('/api/test/data/:testId', authenticate, async (req, res) => {
                 'version': '1'
             }
         });
+        
         res.json(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
+        console.error('Test data error:', error.message);
+        res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
 
 // ============ LIVE CLASSES APIs ============
 
-// Get only live classes
+// Get all live classes
 app.get('/api/live/classes', authenticate, async (req, res) => {
     try {
         const { courseId = "152" } = req.query;
+        
+        console.log(`📺 Fetching live classes for course: ${courseId}`);
         
         const response = await axios.post(`${NEXTTOPERS_API}/course/all-content`, {
             course_id: courseId,
@@ -325,7 +378,6 @@ app.get('/api/live/classes', authenticate, async (req, res) => {
             }
         });
         
-        // Filter live content (from your original code)
         const liveClasses = response.data.data?.filter(item => {
             const isLiveType = item.type === 'live';
             const hasLiveData = item.data && item.data.is_live === 1;
@@ -333,13 +385,16 @@ app.get('/api/live/classes', authenticate, async (req, res) => {
             return isLiveType || hasLiveData || isLiveVideo;
         }) || [];
         
+        console.log(`✅ Found ${liveClasses.length} live classes`);
+        
         res.json({
             success: true,
             total: liveClasses.length,
             data: liveClasses
         });
     } catch (error) {
-        res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
+        console.error('Live classes error:', error.message);
+        res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
 
@@ -376,6 +431,7 @@ app.get('/api/live/upcoming', authenticate, async (req, res) => {
             data: upcomingLives
         });
     } catch (error) {
+        console.error('Upcoming lives error:', error.message);
         res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
@@ -414,6 +470,7 @@ app.get('/api/live/ongoing', authenticate, async (req, res) => {
             data: ongoingLives
         });
     } catch (error) {
+        console.error('Ongoing lives error:', error.message);
         res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
@@ -423,6 +480,8 @@ app.get('/api/live/class/:contentId', authenticate, async (req, res) => {
     try {
         const { contentId } = req.params;
         const { courseId = "152" } = req.query;
+        
+        console.log(`🎬 Live class details: ${contentId}`);
         
         const response = await axios.get(`${NEXTTOPERS_API}/course/content-details`, {
             params: {
@@ -439,29 +498,19 @@ app.get('/api/live/class/:contentId', authenticate, async (req, res) => {
         
         res.json(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).json({ error: error.response?.data?.message || error.message });
+        console.error('Live class details error:', error.message);
+        res.status(error.response?.status || 500).json({ error: error.message });
     }
 });
 
 // ============ UTILITY APIs ============
 
-// Get all courses list
-app.get('/api/courses', authenticate, async (req, res) => {
-    try {
-        // You can modify this to fetch courses list
-        res.json({
-            success: true,
-            message: "Courses list endpoint - modify as needed"
-        });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
 // Search content
 app.post('/api/search', authenticate, async (req, res) => {
     try {
         const { keyword, courseId = "152" } = req.body;
+        
+        console.log(`🔍 Searching for: ${keyword}`);
         
         const response = await axios.post(`${NEXTTOPERS_API}/course/all-content`, {
             course_id: courseId,
@@ -480,7 +529,21 @@ app.post('/api/search', authenticate, async (req, res) => {
         
         res.json(response.data);
     } catch (error) {
+        console.error('Search error:', error.message);
         res.status(error.response?.status || 500).json({ error: error.message });
+    }
+});
+
+// Get all courses (basic endpoint)
+app.get('/api/courses', authenticate, async (req, res) => {
+    try {
+        // You can add logic to fetch courses list
+        res.json({
+            success: true,
+            message: "Courses endpoint - add your course list logic here"
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -494,13 +557,34 @@ app.get('/health', (req, res) => {
     });
 });
 
-// ============ CLEANUP OLD SESSIONS (every hour) ============
+// Root endpoint
+app.get('/', (req, res) => {
+    res.json({
+        name: 'NextToppers API Proxy',
+        version: '2.0.0',
+        status: 'running',
+        endpoints: {
+            auth: ['POST /api/auth/login', 'POST /api/auth/verify', 'GET /api/auth/me', 'POST /api/auth/refresh', 'POST /api/auth/logout'],
+            course: ['POST /api/course/details', 'POST /api/course/content', 'GET /api/course/content-details', 'GET /api/course/content-details/:contentId'],
+            test: ['GET /api/test/instructions/:testId', 'GET /api/test/data/:testId'],
+            live: ['GET /api/live/classes', 'GET /api/live/upcoming', 'GET /api/live/ongoing', 'GET /api/live/class/:contentId'],
+            utility: ['POST /api/search', 'GET /api/courses', 'GET /health']
+        }
+    });
+});
+
+// ============ CLEANUP OLD SESSIONS ============
 setInterval(() => {
     const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
+    let deletedCount = 0;
     for (const [id, session] of sessions.entries()) {
         if (session.lastUsed < oneDayAgo) {
             sessions.delete(id);
+            deletedCount++;
         }
+    }
+    if (deletedCount > 0) {
+        console.log(`🧹 Cleaned up ${deletedCount} old sessions`);
     }
 }, 60 * 60 * 1000);
 
@@ -513,42 +597,20 @@ if (require.main === module) {
     app.listen(PORT, () => {
         console.log(`
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                    🚀 COMPLETE API PROXY SERVER                              ║
+║                    🚀 COMPLETE API PROXY SERVER v2.0                         ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║  Port: ${PORT}                                                                 ║
 ║                                                                              ║
-║  📌 AUTH ENDPOINTS:                                                          ║
-║     POST   /api/auth/login       - Send OTP                                  ║
-║     POST   /api/auth/verify      - Verify OTP & Login                        ║
-║     GET    /api/auth/me          - Get session status                        ║
-║     POST   /api/auth/refresh     - Refresh JWT token                         ║
-║     POST   /api/auth/logout      - Logout                                    ║
-║                                                                              ║
-║  📌 COURSE ENDPOINTS:                                                        ║
-║     POST   /api/course/details   - Get course details                        ║
-║     POST   /api/course/content   - Get all content                           ║
-║     GET    /api/course/content-details - Get content details                 ║
-║                                                                              ║
-║  📌 TEST ENDPOINTS:                                                          ║
-║     GET    /api/test/instructions/:id - Get test instructions                ║
-║     GET    /api/test/data/:id       - Get test data                          ║
-║                                                                              ║
-║  📌 LIVE CLASS ENDPOINTS:                                                    ║
-║     GET    /api/live/classes     - Get all live classes                      ║
-║     GET    /api/live/upcoming    - Get upcoming live classes                 ║
-║     GET    /api/live/ongoing     - Get ongoing live classes                  ║
-║     GET    /api/live/class/:id   - Get single live class details             ║
-║                                                                              ║
-║  📌 UTILITY ENDPOINTS:                                                       ║
-║     GET    /api/courses          - Get courses list                          ║
-║     POST   /api/search           - Search content                            ║
-║     GET    /health               - Health check                              ║
+║  📌 FIXED ENDPOINTS:                                                         ║
+║     GET  /api/course/content-details?content_id=xxx  ✅ WORKS NOW            ║
+║     GET  /api/course/content-details/:contentId      ✅ WORKS NOW            ║
 ║                                                                              ║
 ║  🔐 Features:                                                                ║
 ║     ✅ Auto JWT refresh (5 min before expiry)                                ║
 ║     ✅ Session persistence (30 days)                                         ║
 ║     ✅ All APIs proxied with authentication                                  ║
 ║     ✅ Live classes filtered automatically                                   ║
+║     ✅ Multiple content-details formats supported                            ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
         `);
