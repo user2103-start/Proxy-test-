@@ -57,26 +57,35 @@ export default async function handler(req, res) {
     }
 
     // ====================== CONTENT DETAILS ======================
-    if (pathname.startsWith('/api/content/')) {
-      const courseId = pathname.split('/').pop();
+const pathParts = pathname.split('/');
 
-      const batchId = query.batch_id || 1;
+if (pathParts[1] === 'api' && pathParts[2] === 'content') {
 
-      const token = req.headers.authorization || '';
+  const courseId = pathParts[3];
 
-      const response = await fetch(
-        `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
-        {
-          headers: {
-            Authorization: token,
-          },
-        }
-      );
+  const batchId = query.batch_id || 1;
 
-      const data = await response.json();
+  const token = req.headers.authorization || '';
 
-      return res.status(200).json(data);
+  if (!courseId) {
+    return res.status(400).json({
+      error: 'Course ID missing',
+    });
+  }
+
+  const response = await fetch(
+    `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
+    {
+      headers: {
+        Authorization: token,
+      },
     }
+  );
+
+  const data = await response.json();
+
+  return res.status(200).json(data);
+}
 
     // ====================== 404 ======================
     return res.status(404).json({
