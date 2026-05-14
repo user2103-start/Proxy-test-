@@ -1,93 +1,46 @@
-// api/proxy.js
-export const config = {
-  runtime: 'edge',
+const fetch = require('node-fetch');
+
+const BASE_URL = 'https://api.thescholarverse.site';
+
+module.exports = async (req, res) => {
+  const { pathname } = req.url;
+  const token = req.headers.authorization;
+
+  // ====================== LOGIN API ======================
+  if (pathname === '/api/login') {
+    try {
+      const response = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body)
+      });
+
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    } catch (err) {
+      return res.status(500).json({ error: 'Login proxy failed' });
+    }
+  }
+
+  // ====================== CONTENT API ======================
+  if (pathname.startsWith('/api/content/')) {
+    const courseId = pathname.split('/').pop();
+    const batchId = new URLSearchParams(req.url.split('?')[1] || '').get('batch_id');
+
+    try {
+      const response = await fetch(
+        `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
+        {
+          headers: { Authorization: token || '' }
+        }
+      );
+
+      const data = await response.json();
+      return res.status(200).json(data);
+    } catch (err) {
+      return res.status(500).json({ error: 'Content proxy failed' });
+    }
+  }
+
+  res.status(404).json({ error: 'Route not found' });
 };
-
-// Simple in-memory rate limit (per IP)
-const rateLimit = new Map();
-
-export default async function handler(request) {
-  // =========================================
-  // 1. CORS HEADERS
-  // =========================================
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, Accept',
-    'Cache-Control': 's-maxage=60, stale-while-revalidate=300',
-  };
-
-  // Handle preflight (OPTIONS)
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers });
-  }
-
-  // =========================================
-  // 2. RATE LIMIT (100 req/min per IP)
-  // =========================================
-  const ip = request.headers.get('x-forwarded-for') || 'unknown';
-  const now = Date.now();
-  
-  if (!rateLimit.has(ip)) {
-    rateLimit.set(ip, []);
-  }
-  
-  const requests = rateLimit.get(ip);
-  const windowStart = now - 60000; // 1 minute
-  
-  // Remove old requests
-  while (requests.length > 0 && requests[0] < windowStart) {
-    requests.shift();
-  }
-  
-  if (requests.length >= 1000) {
-    return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), {
-      status: 429,
-      headers: { ...headers, 'Content-Type': 'application/json' },
-    });
-  }
-  
-  requests.push(now);
-
-  // =========================================
-  // 3. EXTRACT PATH & FORWARD TO ORIGINAL API
-  // =========================================
-  const url = new URL(request.url);
-  const path = url.pathname.replace(/^\/api\//, '');
-  
-  if (!path) {
-    return new Response(JSON.stringify({ error: 'Invalid API path' }), {
-      status: 400,
-      headers: { ...headers, 'Content-Type': 'application/json' },
-    });
-  }
-
-  const targetUrl = `https://api.thescholarverse.site/missionjeet/${path}`;
-
-  try {
-    const response = await fetch(targetUrl, {
-      headers: {
-        'Authorization': request.headers.get('Authorization') || '',
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    // ✅ Add timestamp for auto-detect
-    data._timestamp = Date.now();
-
-    return new Response(JSON.stringify(data), {
-      status: response.status,
-      headers: {
-        ...headers,
-        'Content-Type': 'application/json',
-      },
-    });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: 'Proxy server error' }), {
-      status: 500,
-      headers: { ...headers, 'Content-Type': 'application/json' },
-    });
-  }
-                                        }
