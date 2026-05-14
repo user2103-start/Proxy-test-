@@ -1,850 +1,162 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mission JEET</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; color: #333; }
-        
-        /* Header */
-        .header {
-            background: #1a1a2e;
-            color: white;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            color: #e94560;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logo img { height: 40px; border-radius: 5px; }
-        .login-btn {
-            background: #e94560;
-            color: white;
-            border: none;
-            padding: 8px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-size: 14px;
-        }
-        .login-btn:hover { background: #c73652; }
-        
-        /* Container */
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 0 15px;
-        }
-        
-        /* Section Titles */
-        .section-title {
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            color: #1a1a2e;
-        }
-        .section-title .badge {
-            background: #e94560;
-            color: white;
-            font-size: 14px;
-            padding: 2px 12px;
-            border-radius: 20px;
-            margin-left: 10px;
-        }
-        
-        /* Live Classes Section */
-        .live-section {
-            margin-bottom: 40px;
-            display: none;
-        }
-        .live-section.active { display: block; }
-        .live-section .live-badge {
-            display: inline-block;
-            background: #e94560;
-            color: white;
-            padding: 4px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        /* Course Cards */
-        .courses-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
-        }
-        .course-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
-        }
-        .course-card:hover { transform: translateY(-5px); }
-        .course-card img {
-            width: 100%;
-            height: 180px;
-            object-fit: cover;
-        }
-        .course-card .info { padding: 15px; }
-        .course-card h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-            color: #1a1a2e;
-            line-height: 1.4;
-        }
-        .course-card .price {
-            font-size: 18px;
-            font-weight: bold;
-            color: #2ecc71;
-        }
-        .course-card .meta {
-            font-size: 12px;
-            color: #666;
-            margin-top: 5px;
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        .course-card .tag-new {
-            background: #e94560;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-        }
-        .course-card .tag-trending {
-            background: #f39c12;
-            color: white;
-            padding: 2px 10px;
-            border-radius: 20px;
-            font-size: 10px;
-        }
-        .course-card .explore-btn {
-            width: 100%;
-            margin-top: 10px;
-            background: #e94560;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-size: 14px;
-        }
-        .course-card .explore-btn:hover { background: #c73652; }
-        
-        /* Loading */
-        .loading {
-            text-align: center;
-            padding: 50px;
-            font-size: 18px;
-            color: #666;
-        }
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #e94560;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Login Modal */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.6);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal.active { display: flex; }
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 95%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-        .modal-content h2 {
-            margin-bottom: 20px;
-            text-align: center;
-            color: #1a1a2e;
-        }
-        .modal-content input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 16px;
-            outline: none;
-        }
-        .modal-content input:focus { border-color: #e94560; }
-        .modal-content button {
-            width: 100%;
-            padding: 12px;
-            background: #e94560;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: 0.3s;
-        }
-        .modal-content button:hover { background: #c73652; }
-        .modal-content .cancel-btn {
-            background: #666;
-            margin-top: 10px;
-        }
-        .modal-content .cancel-btn:hover { background: #555; }
-        .modal-content .otp-row {
-            display: flex;
-            gap: 8px;
-            justify-content: center;
-            margin: 15px 0;
-        }
-        .modal-content .otp-row input {
-            width: 45px;
-            height: 50px;
-            text-align: center;
-            font-size: 24px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            outline: none;
-        }
-        .modal-content .otp-row input:focus { border-color: #e94560; }
-        .modal-content .otp-message {
-            text-align: center;
-            margin-bottom: 10px;
-            color: #666;
-        }
-        .modal-content .name-step { display: none; }
-        
-        /* Video Player Overlay */
-        .video-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.95);
-            z-index: 999;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-        .video-overlay.active { display: flex; }
-        .video-wrapper {
-            width: 92%;
-            max-width: 1200px;
-            max-height: 92vh;
-            background: #000;
-            border-radius: 12px;
-            overflow: hidden;
-            position: relative;
-        }
-        .video-wrapper video {
-            width: 100%;
-            aspect-ratio: 16/9;
-            display: block;
-        }
-        .video-wrapper .controls {
-            display: flex;
-            gap: 10px;
-            padding: 12px 15px;
-            background: rgba(0,0,0,0.85);
-            flex-wrap: wrap;
-            align-items: center;
-            backdrop-filter: blur(10px);
-        }
-        .video-wrapper .controls button {
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border: none;
-            padding: 6px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-            font-size: 13px;
-        }
-        .video-wrapper .controls button:hover { background: rgba(255,255,255,0.25); }
-        .video-wrapper .controls select {
-            padding: 5px 10px;
-            border-radius: 5px;
-            background: rgba(255,255,255,0.15);
-            color: white;
-            border: none;
-            outline: none;
-        }
-        .video-wrapper .controls select option { color: black; }
-        .video-wrapper .close-btn {
-            position: absolute;
-            top: 12px;
-            right: 15px;
-            background: rgba(233,69,96,0.9);
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10;
-            font-size: 14px;
-        }
-        .video-wrapper .close-btn:hover { background: #c73652; }
-        .video-wrapper .back-btn {
-            position: absolute;
-            top: 12px;
-            left: 15px;
-            background: rgba(0,0,0,0.6);
-            color: white;
-            border: none;
-            padding: 8px 18px;
-            border-radius: 5px;
-            cursor: pointer;
-            z-index: 10;
-            font-size: 14px;
-        }
-        .video-wrapper .back-btn:hover { background: rgba(0,0,0,0.8); }
-        
-        /* Responsive */
-        @media (max-width: 768px) {
-            .courses-grid { grid-template-columns: repeat(2, 1fr); }
-            .video-wrapper { width: 98%; }
-            .video-wrapper .controls { padding: 8px 10px; gap: 5px; }
-            .video-wrapper .controls button { padding: 4px 10px; font-size: 11px; }
-            .logo { font-size: 18px; }
-            .logo img { height: 30px; }
-        }
-        @media (max-width: 480px) {
-            .courses-grid { grid-template-columns: 1fr; }
-            .header { padding: 10px 15px; }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ScholarVerse Proxy</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+    .container { max-width: 1100px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+    input, select, button { padding: 12px; margin: 8px 0; width: 100%; border-radius: 6px; font-size: 16px; }
+    button { background: #007bff; color: white; border: none; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    .video-container { margin: 20px 0; background: black; border-radius: 10px; overflow: hidden; }
+    video { width: 100%; max-height: 520px; }
+  </style>
 </head>
 <body>
 
-    <!-- Header -->
-    <header class="header">
-        <div class="logo">
-            <img src="https://via.placeholder.com/40x40?text=MJ" alt="Logo">
-            Mission JEET
-        </div>
-        <button class="login-btn" onclick="openLogin()">Login / Register</button>
-    </header>
+<div class="container" id="loginScreen">
+  <h2>Login to ScholarVerse</h2>
+  <input type="text" id="username" placeholder="Username / Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <button onclick="login()">Login</button>
+</div>
 
-    <!-- Main Content -->
-    <div class="container">
-        <!-- Live Classes Section -->
-        <div id="live-section" class="live-section">
-            <h2 class="section-title">
-                🔴 Live Classes
-                <span class="live-badge">LIVE</span>
-                <span class="badge" id="live-count">0</span>
-            </h2>
-            <div id="live-classes-container" class="courses-grid"></div>
-        </div>
+<div class="container" id="playerScreen" style="display:none;">
+  <h1>ScholarVerse Video Proxy</h1>
+  
+  <div>
+    <select id="courseId">
+      <option value="151">Course 151</option>
+      <option value="152">Course 152</option>
+    </select>
+    <input type="text" id="batchId" placeholder="Batch ID" value="1" />
+    <button onclick="loadVideo()">Load Video</button>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-        <!-- All Courses Section -->
-        <h2 class="section-title">📚 All Courses</h2>
-        <div id="courses-container" class="courses-grid">
-            <div class="loading"><div class="spinner"></div>Loading...</div>
-        </div>
-    </div>
+  <div id="info"></div>
 
-    <!-- Video Player Overlay -->
-    <div id="video-overlay" class="video-overlay">
-        <div class="video-wrapper">
-            <button class="back-btn" onclick="closeVideo()">← Back</button>
-            <button class="close-btn" onclick="closeVideo()">✕ Close</button>
-            
-            <video id="video-player" controls autoplay></video>
-            
-            <div class="controls">
-                <button onclick="togglePlay()">⏯ Play/Pause</button>
-                <select id="quality-select" onchange="changeQuality()">
-                    <option value="auto">Auto</option>
-                </select>
-                <button onclick="toggleFullscreen()">⛶ Fullscreen</button>
-                <button onclick="toggleSpeed()">⚡ Speed: 1x</button>
-                <button onclick="closeVideo()">✕ Close</button>
-            </div>
-        </div>
-    </div>
+  <div class="video-container">
+    <video id="video" controls></video>
+  </div>
 
-    <!-- Login Modal -->
-    <div id="login-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="modal-title">🔐 Login / Register</h2>
-            
-            <!-- Step 1: Mobile -->
-            <div id="step-mobile">
-                <input type="tel" id="mobile" placeholder="Enter mobile number" maxlength="10">
-                <button onclick="sendOTP()">📲 Send OTP</button>
-                <button class="cancel-btn" onclick="closeLogin()">Cancel</button>
-            </div>
-            
-            <!-- Step 2: OTP -->
-            <div id="step-otp" style="display:none;">
-                <p class="otp-message">OTP sent to <strong id="otp-mobile"></strong></p>
-                <div class="otp-row">
-                    <input type="text" maxlength="1" class="otp-input">
-                    <input type="text" maxlength="1" class="otp-input">
-                    <input type="text" maxlength="1" class="otp-input">
-                    <input type="text" maxlength="1" class="otp-input">
-                    <input type="text" maxlength="1" class="otp-input">
-                    <input type="text" maxlength="1" class="otp-input">
-                </div>
-                <button onclick="verifyOTP()">✅ Verify OTP</button>
-                <button class="cancel-btn" onclick="closeLogin()">Cancel</button>
-            </div>
-            
-            <!-- Step 3: Name (if new user) -->
-            <div id="step-name" style="display:none;">
-                <input type="text" id="name" placeholder="Enter your name">
-                <button onclick="submitName()">Continue</button>
-                <button class="cancel-btn" onclick="closeLogin()">Cancel</button>
-            </div>
-        </div>
-    </div>
+  <div>
+    <label>Quality: </label>
+    <select id="qualitySelect" onchange="changeQuality(this.value)"></select>
+    
+    <label style="margin-left:20px">Speed: </label>
+    <select onchange="changeSpeed(this.value)">
+      <option value="0.5">0.5x</option>
+      <option value="1" selected>1x</option>
+      <option value="1.5">1.5x</option>
+      <option value="2">2x</option>
+    </select>
+  </div>
 
-    <!-- JavaScript -->
-    <script>
-        // =========================================
-        // CONFIG
-        // =========================================
-        const API_BASE = '/api';
-        let user = null;
-        let mobile = '';
-        let hls = null;
-        let video = null;
-        let speed = 1;
-        let lastContentHash = '';
-        let isNewContentDetected = false;
+  <div style="margin-top:20px;">
+    <h3>Bookmarks</h3>
+    <div id="bookmarks"></div>
+    <button onclick="addBookmark()">Add Bookmark</button>
+  </div>
+</div>
 
-        // =========================================
-        // INIT
-        // =========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            video = document.getElementById('video-player');
-            
-            // Check if user already logged in
-            const savedUser = localStorage.getItem('user');
-            if (savedUser) {
-                user = JSON.parse(savedUser);
-                updateUI();
-            }
-            
-            // Load HLS.js from CDN
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest';
-            document.head.appendChild(script);
-            
-            // Initial load
-            fetchData();
-            
-            // Auto-refresh every 30 seconds
-            setInterval(fetchData, 30000);
-        });
+<script>
+  let hls = null;
+  let currentTime = 0;
+  let bookmarks = [];
 
-        // =========================================
-        // FETCH DATA (Auto-detect new content)
-        // =========================================
-        async function fetchData() {
-            try {
-                const response = await fetch(`${API_BASE}/course/all-course`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    const contentHash = JSON.stringify(data.data);
-                    
-                    // Check if new content detected
-                    if (contentHash !== lastContentHash) {
-                        console.log('🆕 New content detected!');
-                        displayCourses(data.data, true);
-                        lastContentHash = contentHash;
-                    } else {
-                        displayCourses(data.data, false);
-                    }
-                } else {
-                    console.error('API returned error:', data);
-                }
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        }
+  async function login() {
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
 
-        // =========================================
-        // DISPLAY COURSES
-        // =========================================
-        function displayCourses(courses, isNew) {
-            const container = document.getElementById('courses-container');
-            const liveContainer = document.getElementById('live-classes-container');
-            const liveSection = document.getElementById('live-section');
-            
-            container.innerHTML = '';
-            liveContainer.innerHTML = '';
-            
-            let courseList = [];
-            let liveList = [];
-            
-            // Parse courses
-            for (const course of courses) {
-                if (course.layout_type === 'course_list_layout' && course.list) {
-                    courseList = course.list;
-                    break;
-                }
-            }
-            
-            if (courseList.length === 0) {
-                container.innerHTML = '<p style="text-align:center;">No courses found</p>';
-                return;
-            }
-            
-            // 🔥 Detect new content (videos, new folders)
-            const newContent = courseList.filter(item => {
-                const isNew = item.is_new === '1' || item.is_trending === '1';
-                const hasVideo = item.file_type === 2; // 2 = video
-                return isNew && hasVideo;
-            });
-            
-            // If new content found, show in Live Classes section
-            if (newContent.length > 0) {
-                liveSection.classList.add('active');
-                document.getElementById('live-count').textContent = newContent.length;
-                newContent.forEach(item => {
-                    const card = createCourseCard(item, true);
-                    liveContainer.appendChild(card);
-                });
-            } else {
-                liveSection.classList.remove('active');
-            }
-            
-            // Display all courses
-            courseList.forEach(item => {
-                const card = createCourseCard(item, false);
-                container.appendChild(card);
-            });
-        }
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
 
-        // =========================================
-        // CREATE COURSE CARD
-        // =========================================
-        function createCourseCard(course, isLive) {
-            const card = document.createElement('div');
-            card.className = 'course-card';
-            
-            let tags = '';
-            if (course.is_new) tags += '<span class="tag-new">NEW</span> ';
-            if (course.is_trending) tags += '<span class="tag-trending">🔥 TRENDING</span> ';
-            if (isLive) tags += '<span class="tag-new" style="animation:pulse 1.5s infinite;">🔴 LIVE</span> ';
-            
-            card.innerHTML = `
-                <img src="${course.thumbnail || 'https://via.placeholder.com/300x180'}" alt="${course.title}">
-                <div class="info">
-                    <h3>${course.title}</h3>
-                    <div class="price">₹${course.offer_price}</div>
-                    <div class="meta">
-                        ${tags}
-                        ${course.duration ? `<span>⏱ ${course.duration}</span>` : ''}
-                    </div>
-                    <button class="explore-btn" onclick="viewContent('${course.id}')">▶ Explore</button>
-                </div>
-            `;
-            return card;
-        }
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('playerScreen').style.display = 'block';
+      } else {
+        alert('Login Failed');
+      }
+    } catch (err) {
+      alert('Login error');
+    }
+  }
 
-        // =========================================
-        // VIDEO PLAYER
-        // =========================================
-        async function viewContent(contentId) {
-            document.getElementById('video-overlay').classList.add('active');
-            
-            const token = localStorage.getItem('token');
-            if (!token) {
-                alert('Please login first to watch videos');
-                openLogin();
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/course/content-details/${contentId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Accept': 'application/json'
-                    }
-                });
-                const data = await response.json();
-                
-                if (data && data.data) {
-                    const videoData = data.data;
-                    
-                    let videoUrl = '';
-                    if (videoData.file_url) {
-                        videoUrl = videoData.file_url;
-                    } else if (typeof videoData.download_urls === 'string') {
-                        videoUrl = videoData.download_urls;
-                    } else if (typeof videoData.download_urls === 'object') {
-                        videoUrl = videoData.download_urls[1080] || 
-                                  videoData.download_urls[720] || 
-                                  videoData.download_urls[480] || 
-                                  Object.values(videoData.download_urls)[0];
-                    }
-                    
-                    if (videoUrl && videoUrl.includes('.m3u8')) {
-                        // HLS Stream
-                        if (Hls.isSupported()) {
-                            if (hls) {
-                                hls.destroy();
-                            }
-                            hls = new Hls();
-                            hls.loadSource(videoUrl);
-                            hls.attachMedia(video);
-                            hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-                                const levels = data.levels;
-                                const qualitySelect = document.getElementById('quality-select');
-                                qualitySelect.innerHTML = '<option value="auto">Auto</option>';
-                                levels.forEach((level, index) => {
-                                    const option = document.createElement('option');
-                                    option.value = index;
-                                    option.textContent = `${level.height}p`;
-                                    qualitySelect.appendChild(option);
-                                });
-                                video.play();
-                            });
-                        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                            video.src = videoUrl;
-                            video.play();
-                        }
-                    } else if (videoUrl) {
-                        // Direct video
-                        video.src = videoUrl;
-                        video.play();
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading video:', error);
-                alert('Error loading video');
-                closeVideo();
-            }
-        }
+  async function loadVideo() {
+    const courseId = document.getElementById('courseId').value;
+    const batchId = document.getElementById('batchId').value;
+    const token = localStorage.getItem('token');
 
-        function closeVideo() {
-            document.getElementById('video-overlay').classList.remove('active');
-            if (hls) {
-                hls.destroy();
-                hls = null;
-            }
-            video.src = '';
-            video.load();
-        }
+    const res = await fetch(`/api/content/${courseId}?batch_id=${batchId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
 
-        // =========================================
-        // VIDEO CONTROLS
-        // =========================================
-        function togglePlay() {
-            if (video.paused) {
-                video.play();
-            } else {
-                video.pause();
-            }
-        }
+    const data = await res.json();
+    const lesson = data.data;
 
-        function toggleFullscreen() {
-            if (video.requestFullscreen) {
-                video.requestFullscreen();
-            } else if (video.webkitRequestFullscreen) {
-                video.webkitRequestFullscreen();
-            }
-        }
+    document.getElementById('info').innerHTML = `<h2>${lesson.title}</h2>`;
 
-        function toggleSpeed() {
-            const speeds = [0.5, 1, 1.5, 2];
-            let idx = speeds.indexOf(speed);
-            idx = (idx + 1) % speeds.length;
-            speed = speeds[idx];
-            video.playbackRate = speed;
-            document.querySelector('[onclick="toggleSpeed()"]').textContent = `⚡ Speed: ${speed}x`;
-        }
+    const video = document.getElementById('video');
+    const streamUrl = lesson.file_url || Object.values(lesson.download_urls || {})[0];
 
-        function changeQuality() {
-            if (hls) {
-                const level = parseInt(document.getElementById('quality-select').value);
-                hls.currentLevel = isNaN(level) ? -1 : level;
-            }
-        }
+    if (hls) hls.destroy();
 
-        // =========================================
-        // LOGIN SYSTEM
-        // =========================================
-        function openLogin() {
-            document.getElementById('login-modal').classList.add('active');
-            document.getElementById('step-mobile').style.display = 'block';
-            document.getElementById('step-otp').style.display = 'none';
-            document.getElementById('step-name').style.display = 'none';
-            document.getElementById('mobile').value = '';
-        }
+    if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
+      hls = new Hls();
+      hls.loadSource(streamUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => populateQualitySelector(hls));
+    } else {
+      video.src = streamUrl;
+    }
 
-        function closeLogin() {
-            document.getElementById('login-modal').classList.remove('active');
-        }
+    video.ontimeupdate = () => currentTime = video.currentTime;
+  }
 
-        async function sendOTP() {
-            const mobileInput = document.getElementById('mobile');
-            mobile = mobileInput.value.trim();
-            
-            if (mobile.length !== 10) {
-                alert('Please enter a valid 10-digit mobile number');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/auth/check-user?mobile=${mobile}&device_id=xyz`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    document.getElementById('step-mobile').style.display = 'none';
-                    document.getElementById('step-otp').style.display = 'block';
-                    document.getElementById('otp-mobile').textContent = mobile;
-                    
-                    // If user doesn't exist, show name step after OTP
-                    if (!data.data.exists) {
-                        // Handle in verifyOTP
-                    }
-                } else {
-                    alert(data.message || 'Failed to send OTP');
-                }
-            } catch (error) {
-                console.error('Error sending OTP:', error);
-                alert('Network error. Please try again.');
-            }
-        }
+  function populateQualitySelector(hlsInstance) {
+    const select = document.getElementById('qualitySelect');
+    select.innerHTML = '<option value="-1">Auto</option>';
+    hlsInstance.levels.forEach((level, i) => {
+      const opt = new Option(`${level.height}p`, i);
+      select.appendChild(opt);
+    });
+  }
 
-        async function verifyOTP() {
-            const otpInputs = document.querySelectorAll('.otp-input');
-            let otp = '';
-            otpInputs.forEach(input => {
-                otp += input.value;
-            });
-            
-            if (otp.length !== 6) {
-                alert('Please enter the complete 6-digit OTP');
-                return;
-            }
-            
-            try {
-                const response = await fetch(`${API_BASE}/auth/verify-otp?mobile=${mobile}&otp=${otp}&device_id=xyz&name=Guest`);
-                const data = await response.json();
-                
-                if (data.success) {
-                    user = data.data;
-                    localStorage.setItem('user', JSON.stringify(user));
-                    localStorage.setItem('token', data.data.accessToken);
-                    closeLogin();
-                    updateUI();
-                } else {
-                    alert(data.message || 'Invalid OTP');
-                }
-            } catch (error) {
-                console.error('Error verifying OTP:', error);
-                alert('Verification failed. Please try again.');
-            }
-        }
+  function changeQuality(level) { if (hls) hls.currentLevel = parseInt(level); }
+  function changeSpeed(speed) { document.getElementById('video').playbackRate = parseFloat(speed); }
 
-        function submitName() {
-            const name = document.getElementById('name').value.trim();
-            if (!name) {
-                alert('Please enter your name');
-                return;
-            }
-            verifyOTP();
-        }
+  function addBookmark() {
+    const title = prompt("Bookmark Title:");
+    if (title) {
+      bookmarks.push({ time: currentTime, title });
+      renderBookmarks();
+    }
+  }
 
-        function updateUI() {
-            const loginBtn = document.querySelector('.login-btn');
-            if (user) {
-                loginBtn.textContent = `👋 Hi, ${user.name}`;
-                loginBtn.onclick = () => {
-                    if (confirm('Are you sure you want to logout?')) {
-                        localStorage.removeItem('user');
-                        localStorage.removeItem('token');
-                        user = null;
-                        updateUI();
-                    }
-                };
-            } else {
-                loginBtn.textContent = '🔐 Login / Register';
-                loginBtn.onclick = openLogin;
-            }
-        }
+  function renderBookmarks() {
+    const div = document.getElementById('bookmarks');
+    div.innerHTML = bookmarks.map((b, i) => `
+      <div style="margin:5px 0; padding:8px; background:#f8f9fa;">
+        ${Math.floor(b.time/60)}:${(b.time%60).toFixed(0).padStart(2,'0')} - ${b.title}
+        <button onclick="seekTo(${b.time})">Play</button>
+        <button onclick="deleteBookmark(${i})">Delete</button>
+      </div>
+    `).join('');
+  }
 
-        // =========================================
-        // OTP Input Handler
-        // =========================================
-        document.addEventListener('input', (e) => {
-            if (e.target.classList.contains('otp-input')) {
-                const next = e.target.nextElementSibling;
-                if (e.target.value && next) {
-                    next.focus();
-                }
-            }
-        });
-
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && e.target.classList.contains('otp-input')) {
-                const prev = e.target.previousElementSibling;
-                if (prev) {
-                    prev.focus();
-                    prev.value = '';
-                }
-            }
-        });
-
-        // =========================================
-        // CLOSE MODAL ON OUTSIDE CLICK
-        // =========================================
-        document.getElementById('login-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('login-modal')) {
-                closeLogin();
-            }
-        });
-
-        // Close video on Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && document.getElementById('video-overlay').classList.contains('active')) {
-                closeVideo();
-            }
-        });
-    </script>
+  function seekTo(time) { document.getElementById('video').currentTime = time; }
+  function deleteBookmark(i) { bookmarks.splice(i,1); renderBookmarks(); }
+  function logout() { localStorage.removeItem('token'); location.reload(); }
+</script>
 </body>
 </html>
