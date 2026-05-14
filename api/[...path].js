@@ -57,34 +57,44 @@ export default async function handler(req, res) {
     }
 
     // ====================== CONTENT DETAILS ======================
-const pathParts = pathname.split('/');
+const BASE_URL = 'https://api.thescholarverse.site';
 
-if (pathParts[1] === 'api' && pathParts[2] === 'content') {
+export default async function handler(req, res) {
 
-  const courseId = pathParts[3];
+  try {
 
-  const batchId = query.batch_id || 1;
+    const { id } = req.query;
 
-  const token = req.headers.authorization || '';
+    const batchId = req.query.batch_id || 1;
 
-  if (!courseId) {
-    return res.status(400).json({
-      error: 'Course ID missing',
+    const token = req.headers.authorization || '';
+
+    const response = await fetch(
+      `${BASE_URL}/missionjeet/course/content-details/${id}?batch_id=${batchId}`,
+      {
+        headers: {
+          Authorization: token.startsWith('Bearer ')
+            ? token
+            : `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    return res.status(200).json(data);
+
+  } catch (err) {
+
+    console.error(err);
+
+    return res.status(500).json({
+      error: err.message,
     });
+
   }
 
-  const response = await fetch(
-    `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
-    {
-      headers: {
-        Authorization: token,
-      },
-    }
-  );
-
-  const data = await response.json();
-
-  return res.status(200).json(data);
 }
 
     // ====================== 404 ======================
