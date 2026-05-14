@@ -1,867 +1,245 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Study Squad</title>
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
-
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
-
-body{
-background:#0d1117;
-font-family:'DM Sans',sans-serif;
-color:white;
-overflow-x:hidden;
-}
-
-.page{
-display:none;
-min-height:100vh;
-}
-
-.page.active{
-display:block;
-}
-
-/* LOGIN */
-
-#loginPage{
-display:flex;
-justify-content:center;
-align-items:center;
-padding:24px;
-}
-
-.login-card{
-width:100%;
-max-width:380px;
-background:#161b22;
-border:1px solid #30363d;
-border-radius:26px;
-padding:32px;
-}
-
-.logo{
-font-size:2.2rem;
-text-align:center;
-margin-bottom:10px;
-}
-
-.brand{
-font-family:'Instrument Serif',serif;
-font-size:2.2rem;
-text-align:center;
-margin-bottom:10px;
-}
-
-.sub{
-text-align:center;
-color:#8b949e;
-margin-bottom:30px;
-line-height:1.6;
-}
-
-.input{
-width:100%;
-height:56px;
-background:#0d1117;
-border:1px solid #30363d;
-border-radius:16px;
-padding:0 18px;
-color:white;
-font-size:1rem;
-outline:none;
-margin-bottom:18px;
-}
-
-.btn{
-width:100%;
-height:56px;
-border:none;
-border-radius:16px;
-background:#2563eb;
-color:white;
-font-size:1rem;
-font-weight:700;
-cursor:pointer;
-}
-
-.btn:disabled{
-opacity:.5;
-}
-
-/* HOME */
-
-.home{
-max-width:1200px;
-margin:auto;
-padding:24px;
-}
-
-.topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-margin-bottom:50px;
-}
-
-.topbar h1{
-font-family:'Instrument Serif',serif;
-font-size:2rem;
-}
-
-.user{
-padding:10px 16px;
-border-radius:999px;
-background:#161b22;
-border:1px solid #30363d;
-}
-
-.hero{
-text-align:center;
-padding:40px 10px;
-}
-
-.hero h2{
-font-family:'Instrument Serif',serif;
-font-size:4rem;
-line-height:1;
-margin-bottom:18px;
-}
-
-.hero p{
-max-width:700px;
-margin:auto;
-color:#8b949e;
-line-height:1.8;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-gap:24px;
-margin-top:50px;
-}
-
-.card{
-background:#161b22;
-border:1px solid #30363d;
-border-radius:24px;
-overflow:hidden;
-cursor:pointer;
-transition:.25s;
-}
-
-.card:hover{
-transform:translateY(-4px);
-}
-
-.card img{
-width:100%;
-height:220px;
-object-fit:cover;
-background:#0d1117;
-}
-
-.card-body{
-padding:24px;
-}
-
-.card-title{
-font-size:1.4rem;
-font-weight:700;
-margin-bottom:10px;
-}
-
-.card-sub{
-color:#8b949e;
-margin-bottom:16px;
-}
-
-.price{
-font-size:1.2rem;
-font-weight:700;
-}
-
-/* COURSE */
-
-.course{
-max-width:1100px;
-margin:auto;
-padding:24px;
-}
-
-.back{
-display:inline-flex;
-align-items:center;
-gap:8px;
-padding:10px 18px;
-background:#161b22;
-border:1px solid #30363d;
-border-radius:999px;
-cursor:pointer;
-margin-bottom:24px;
-}
-
-.banner{
-width:100%;
-height:260px;
-object-fit:cover;
-border-radius:24px;
-background:#161b22;
-margin-bottom:24px;
-}
-
-.course-title{
-font-size:2rem;
-font-weight:700;
-margin-bottom:14px;
-}
-
-.course-desc{
-color:#8b949e;
-line-height:1.8;
-margin-bottom:30px;
-}
-
-.sec-title{
-font-size:1rem;
-font-weight:700;
-margin-bottom:18px;
-}
-
-.item{
-display:flex;
-align-items:center;
-gap:16px;
-background:#161b22;
-border:1px solid #30363d;
-border-radius:20px;
-padding:14px;
-margin-bottom:14px;
-cursor:pointer;
-transition:.2s;
-}
-
-.item:hover{
-transform:translateY(-2px);
-}
-
-.item img{
-width:90px;
-height:58px;
-object-fit:cover;
-border-radius:12px;
-background:#0d1117;
-}
-
-.meta{
-flex:1;
-}
-
-.meta h3{
-font-size:1rem;
-margin-bottom:6px;
-}
-
-.meta p{
-font-size:.85rem;
-color:#8b949e;
-}
-
-.arrow{
-font-size:1.3rem;
-}
-
-/* PLAYER */
-
-#playerPage{
-background:black;
-}
-
-.player-top{
-height:70px;
-display:flex;
-align-items:center;
-gap:14px;
-padding:0 20px;
-background:#111;
-}
-
-.pback{
-width:42px;
-height:42px;
-border:none;
-border-radius:50%;
-background:#222;
-color:white;
-cursor:pointer;
-font-size:1rem;
-}
-
-#videoTitle{
-font-size:.95rem;
-white-space:nowrap;
-overflow:hidden;
-text-overflow:ellipsis;
-}
-
-video{
-width:100%;
-height:calc(100vh - 70px);
-background:black;
-}
-
-.loader{
-padding:40px;
-text-align:center;
-color:#8b949e;
-}
-
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mission JEET Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .skeleton { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; background: #e5e7eb; border-radius: 0.5rem; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  </style>
 </head>
-<body>
-
-<!-- LOGIN -->
-<div class="page active" id="loginPage">
-
-<div class="login-card">
-
-<div class="logo">🎯</div>
-
-<div class="brand">Study Squad</div>
-
-<div class="sub">
-Watch premium JEE & NEET lectures for free
-</div>
-
-<input
-type="tel"
-class="input"
-id="mobile"
-placeholder="Enter mobile number"
-/>
-
-<button class="btn" onclick="login()">
-Continue
-</button>
-
-</div>
-</div>
-
-<!-- HOME -->
-<div class="page" id="homePage">
-
-<div class="home">
-
-<div class="topbar">
-<h1>Study Squad</h1>
-<div class="user" id="userBox">User</div>
-</div>
-
-<div class="hero">
-
-<h2>
-Premium JEE &<br>
-NEET Courses
-</h2>
-
-<p>
-Watch all lectures, folders and premium videos
-with full HLS streaming support.
-</p>
-
-</div>
-
-<div class="grid">
-
-<div class="card" onclick="openCourse(151)">
-
-<img id="img151">
-
-<div class="card-body">
-
-<div class="card-title" id="title151">
-Loading...
-</div>
-
-<div class="card-sub">
-Physics Chemistry Mathematics
-</div>
-
-<div class="price">
-₹4,999
-</div>
-
-</div>
-</div>
-
-<div class="card" onclick="openCourse(152)">
-
-<img id="img152">
-
-<div class="card-body">
-
-<div class="card-title" id="title152">
-Loading...
-</div>
-
-<div class="card-sub">
-Physics Chemistry Biology
-</div>
-
-<div class="price">
-₹4,999
-</div>
-
-</div>
-</div>
-
-</div>
-</div>
-</div>
-
-<!-- COURSE -->
-<div class="page" id="coursePage">
-
-<div class="course">
-
-<div class="back" onclick="goHome()">
-← Back
-</div>
-
-<img class="banner" id="banner">
-
-<div class="course-title" id="courseTitle">
-Loading...
-</div>
-
-<div class="course-desc" id="courseDesc"></div>
-
-<div class="sec-title">
-Content
-</div>
-
-<div id="contentBox">
-
-<div class="loader">
-Loading content...
-</div>
-
-</div>
-
-</div>
-</div>
-
-<!-- PLAYER -->
-<div class="page" id="playerPage">
-
-<div class="player-top">
-
-<button class="pback" onclick="backCourse()">
-←
-</button>
-
-<div id="videoTitle">
-Video
-</div>
-
-</div>
-
-<video
-id="video"
-controls
-playsinline
-></video>
-
-</div>
-
-<script>
-
-const API = "/api/proxy";
-
-let COURSE_ID = null;
-let HLS = null;
-
-// PAGE
-function show(id){
-
-document.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
-
-document.getElementById(id)
-.classList.add("active");
-
-window.scrollTo(0,0);
-
-}
-
-// LOGIN
-async function login(){
-
-const mobile =
-document.getElementById("mobile").value.trim();
-
-if(!/^[6-9]\\d{9}$/.test(mobile)){
-alert("Enter valid mobile number");
-return;
-}
-
-localStorage.setItem("mobile",mobile);
-
-document.getElementById("userBox")
-.innerText = mobile;
-
-show("homePage");
-
-await loadCourses();
-
-}
-
-// INIT
-(async function(){
-
-const m =
-localStorage.getItem("mobile");
-
-if(m){
-
-document.getElementById("userBox")
-.innerText = m;
-
-show("homePage");
-
-await loadCourses();
-
-}else{
-
-show("loginPage");
-
-}
-
-})();
-
-// API
-async function api(action,data={}){
-
-const q =
-new URLSearchParams({
-action,
-...data
-});
-
-const res =
-await fetch(API+"?"+q);
-
-return res.json();
-
-}
-
-// LOAD COURSES
-async function loadCourses(){
-
-for(const id of [151,152]){
-
-try{
-
-const res =
-await api("course",{
-course_id:id
-});
-
-const ov =
-res.data.find(x=>x.type==="overview");
-
-const details =
-ov.data.find(x=>x.layout_type==="details");
-
-const d =
-details.layout_data[0];
-
-document.getElementById("title"+id)
-.innerText = d.title;
-
-document.getElementById("img"+id)
-.src = d.thumbnail;
-
-}catch(err){
-
-console.log(err);
-
-}
-
-}
-
-}
-
-// OPEN COURSE
-async function openCourse(id){
-
-COURSE_ID = id;
-
-show("coursePage");
-
-document.getElementById("contentBox")
-.innerHTML = `
-<div class="loader">
-Loading content...
-</div>
-`;
-
-try{
-
-const res =
-await api("course",{
-course_id:id
-});
-
-const ov =
-res.data.find(x=>x.type==="overview");
-
-const details =
-ov.data.find(x=>x.layout_type==="details");
-
-const d =
-details.layout_data[0];
-
-document.getElementById("courseTitle")
-.innerText = d.title;
-
-document.getElementById("banner")
-.src = d.thumbnail;
-
-document.getElementById("courseDesc")
-.innerHTML = d.description || "";
-
-await loadContent("0");
-
-}catch(err){
-
-document.getElementById("contentBox")
-.innerHTML = `
-<div class="loader">
-Failed to load course
-</div>
-`;
-
-}
-
-}
-
-// LOAD CONTENT
-async function loadContent(folder="0"){
-
-try{
-
-const res =
-await api("content",{
-course_id:COURSE_ID,
-folder_id:folder
-});
-
-const items = res.data || [];
-
-let html = "";
-
-items.forEach(item=>{
-
-// FOLDER
-if(item.type==="folder"){
-
-html += `
-<div
-class="item"
-onclick="loadContent('${item.entity_id}')"
->
-
-<img src="${
-item.data?.thumbnail || ''
-}">
-
-<div class="meta">
-<h3>${item.title}</h3>
-<p>Folder</p>
-</div>
-
-<div class="arrow">
-›
-</div>
-
-</div>
-`;
-
-}
-
-// VIDEO
-if(item.type==="file"){
-
-html += `
-<div
-class="item"
-onclick='openVideo(${JSON.stringify(item)})'
->
-
-<img src="${
-item.data?.thumbnail || ''
-}">
-
-<div class="meta">
-<h3>${item.title}</h3>
-<p>Video Lecture</p>
-</div>
-
-<div class="arrow">
-▶
-</div>
-
-</div>
-`;
-
-}
-
-});
-
-if(!html){
-
-html = `
-<div class="loader">
-No content found
-</div>
-`;
-
-}
-
-document.getElementById("contentBox")
-.innerHTML = html;
-
-}catch(err){
-
-document.getElementById("contentBox")
-.innerHTML = `
-<div class="loader">
-Failed to load content
-</div>
-`;
-
-}
-
-}
-
-// OPEN VIDEO
-async function openVideo(v){
-
-show("playerPage");
-
-document.getElementById("videoTitle")
-.innerText = v.title;
-
-const video =
-document.getElementById("video");
-
-if(HLS){
-HLS.destroy();
-HLS = null;
-}
-
-try{
-
-const res =
-await api("video",{
-content_id:v.entity_id,
-course_id:COURSE_ID
-});
-
-const d = res.data || {};
-
-let url =
-d.hls_url ||
-d.video_url ||
-d.stream_url ||
-d.url;
-
-if(!url && d.vdc_id){
-
-const p =
-d.vdc_id.split("_");
-
-url =
-`https://d1ji5qpleqhfrc.cloudfront.net/file_library/videos/channel_vod_non_drm_hls/${p[0]}/${d.vdc_id}/${d.vdc_id}_8953428.m3u8`;
-
-}
-
-if(!url){
-
-alert("Video URL not found");
-
-return;
-
-}
-
-if(Hls.isSupported()){
-
-HLS = new Hls();
-
-HLS.loadSource(url);
-
-HLS.attachMedia(video);
-
-HLS.on(Hls.Events.MANIFEST_PARSED,()=>{
-video.play();
-});
-
-}else{
-
-video.src = url;
-
-video.play();
-
-}
-
-}catch(err){
-
-alert("Failed to play video");
-
-console.log(err);
-
-}
-
-}
-
-// BACK
-function backCourse(){
-
-const v =
-document.getElementById("video");
-
-v.pause();
-
-if(HLS){
-HLS.destroy();
-HLS = null;
-}
-
-show("coursePage");
-
-}
-
-function goHome(){
-
-show("homePage");
-
-}
-
-</script>
+<body class="bg-gray-50 min-h-screen">
+
+  <div id="app" class="max-w-5xl mx-auto p-6">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-bold text-gray-800">📚 Mission JEET</h1>
+      <div id="auth-section">
+        <button id="loginBtn" class="bg-indigo-600 text-white px-5 py-2 rounded-lg hover:bg-indigo-700 text-sm font-medium">
+          Login
+        </button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100 text-sm text-gray-500">
+      <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+      Proxy active — all API calls go through <code class="bg-gray-100 px-2 py-0.5 rounded text-xs">/api/mj/*</code>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex gap-2 mb-6">
+      <button class="tab-btn active px-4 py-2 rounded-lg text-sm font-medium" data-tab="courses">Courses</button>
+      <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium" data-tab="classes">Live Classes</button>
+      <button class="tab-btn px-4 py-2 rounded-lg text-sm font-medium" data-tab="auth">Auth Test</button>
+    </div>
+
+    <!-- Tab: Courses -->
+    <div id="tab-courses" class="tab-content">
+      <div class="flex gap-2 mb-4">
+        <input id="catId" type="text" placeholder="Category ID (optional)" class="border rounded-lg px-3 py-2 text-sm flex-1 max-w-xs">
+        <button id="fetchCourses" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+          Fetch Courses
+        </button>
+      </div>
+      <div id="coursesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </div>
+
+    <!-- Tab: Live Classes -->
+    <div id="tab-classes" class="tab-content hidden">
+      <div class="flex gap-2 mb-4">
+        <select id="classType" class="border rounded-lg px-3 py-2 text-sm">
+          <option value="live">Live Now</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+        </select>
+        <input id="courseId" type="text" placeholder="Course ID (default: 177)" class="border rounded-lg px-3 py-2 text-sm w-32">
+        <button id="fetchClasses" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+          Fetch Classes
+        </button>
+      </div>
+      <div id="classesContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    </div>
+
+    <!-- Tab: Auth Test -->
+    <div id="tab-auth" class="tab-content hidden">
+      <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <h3 class="font-semibold mb-3">Test Authentication Flow</h3>
+        <div class="space-y-3">
+          <input id="authMobile" type="text" placeholder="Mobile number (10 digits)" class="border rounded-lg px-3 py-2 text-sm w-full max-w-xs">
+          <button id="checkUser" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-indigo-700">
+            Check User
+          </button>
+          <div id="authResult" class="mt-3 text-sm text-gray-600"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================
+    // API Client — Only knows about /api/mj/* paths
+    // The real URLs (api.thescholarverse.site) are NEVER in this code
+    // ============================================================
+    const API = {
+      prefix: '/api/mj',
+      
+      async get(path, params = {}) {
+        const qs = new URLSearchParams(params).toString();
+        const url = `${this.prefix}${path}${qs ? '?' + qs : ''}`;
+        const res = await fetch(url);
+        return res.json();
+      }
+    };
+
+    // ============================================================
+    // UI Helpers
+    // ============================================================
+    function $(id) { return document.getElementById(id); }
+    function showEl(id) { $(id).classList.remove('hidden'); }
+    function hideEl(id) { $(id).classList.add('hidden'); }
+
+    function showLoading(containerId, count = 3) {
+      const container = $(containerId);
+      container.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        const div = document.createElement('div');
+        div.className = 'skeleton h-32 w-full mb-3';
+        container.appendChild(div);
+      }
+    }
+
+    function createCourseCard(course) {
+      const div = document.createElement('div');
+      div.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition';
+      div.innerHTML = `
+        <div class="font-semibold text-gray-800 mb-1">${course.title || 'Untitled Course'}</div>
+        <div class="text-xs text-gray-400 mb-3">${course._id || ''}</div>
+        ${course.price ? `<div class="text-lg font-bold text-indigo-600">₹${course.price}</div>` : ''}
+        ${course.validity ? `<div class="text-xs text-gray-500">Valid: ${course.validity}</div>` : ''}
+        ${course.badge ? `<span class="inline-block bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded mt-2">${course.badge}</span>` : ''}
+      `;
+      return div;
+    }
+
+    function createClassCard(cls) {
+      const div = document.createElement('div');
+      div.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition';
+      const badge = cls.type === 'live' 
+        ? '<span class="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded font-semibold animate-pulse">🔴 LIVE</span>'
+        : cls.type === 'upcoming' 
+          ? '<span class="inline-block bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded">⏰ Upcoming</span>'
+          : '<span class="inline-block bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">✅ Completed</span>';
+      div.innerHTML = `
+        ${cls.thumbnail ? `<img src="${cls.thumbnail}" class="w-full h-32 object-cover rounded-lg mb-3" />` : ''}
+        <div class="flex justify-between items-start mb-2">
+          <div class="font-semibold text-gray-800">${cls.title || 'Untitled Class'}</div>
+          ${badge}
+        </div>
+        ${cls.start_date ? `<div class="text-xs text-gray-500">📅 ${new Date(cls.start_date).toLocaleDateString('en-IN')}</div>` : ''}
+        ${cls.duration ? `<div class="text-xs text-gray-500">⏱ ${cls.duration}</div>` : ''}
+      `;
+      return div;
+    }
+
+    // ============================================================
+    // Tab Switching
+    // ============================================================
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active', 'bg-indigo-100', 'text-indigo-700'));
+        btn.classList.add('active', 'bg-indigo-100', 'text-indigo-700');
+        document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+        $(`tab-${btn.dataset.tab}`).classList.remove('hidden');
+      });
+    });
+    // Set initial active style
+    document.querySelector('.tab-btn.active')?.classList.add('bg-indigo-100', 'text-indigo-700');
+
+    // ============================================================
+    // 1. Courses
+    // ============================================================
+    $('fetchCourses').addEventListener('click', async () => {
+      const catId = $('catId').value.trim();
+      showLoading('coursesContainer', 6);
+      try {
+        const params = catId ? { cat_id: catId } : {};
+        const data = await API.get('/course/all-course', params);
+        const container = $('coursesContainer');
+        container.innerHTML = '';
+        if (data.success && data.data) {
+          const courses = Array.isArray(data.data) ? data.data : (data.data.courses || data.data.list || []);
+          if (courses.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">No courses found</div>';
+          } else {
+            courses.forEach(c => container.appendChild(createCourseCard(c)));
+          }
+        } else {
+          container.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">${data.message || 'Failed to fetch courses'}</div>`;
+        }
+      } catch (err) {
+        $('coursesContainer').innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Error: ${err.message}</div>`;
+      }
+    });
+
+    // ============================================================
+    // 2. Live Classes
+    // ============================================================
+    $('fetchClasses').addEventListener('click', async () => {
+      const type = $('classType').value;
+      const id = $('courseId').value.trim() || '177';
+      showLoading('classesContainer', 4);
+      try {
+        const data = await API.get('/course/classes', { type, id });
+        const container = $('classesContainer');
+        container.innerHTML = '';
+        if (data.success && data.data) {
+          const classes = Array.isArray(data.data) ? data.data : [];
+          if (classes.length === 0) {
+            container.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">No classes found</div>';
+          } else {
+            classes.forEach(c => {
+              c.type = type;
+              container.appendChild(createClassCard(c));
+            });
+          }
+        } else {
+          container.innerHTML = `<div class="col-span-full text-center text-red-400 py-10">${data.message || 'Failed to fetch classes'}</div>`;
+        }
+      } catch (err) {
+        $('classesContainer').innerHTML = `<div class="col-span-full text-center text-red-400 py-10">Error: ${err.message}</div>`;
+      }
+    });
+
+    // ============================================================
+    // 3. Auth Test
+    // ============================================================
+    $('checkUser').addEventListener('click', async () => {
+      const mobile = $('authMobile').value.trim();
+      if (!mobile || mobile.length < 10) {
+        $('authResult').innerHTML = '<span class="text-red-500">Please enter a valid 10-digit mobile number</span>';
+        return;
+      }
+      $('authResult').innerHTML = '<span class="text-gray-400">Checking user...</span>';
+      try {
+        const data = await API.get('/auth/check-user', { mobile, device_id: 'web-' + Date.now() });
+        if (data.success) {
+          const exists = data.data?.exists;
+          $('authResult').innerHTML = exists 
+            ? '<span class="text-green-600">✅ User exists — would proceed to OTP</span>'
+            : '<span class="text-blue-600">🆕 New user — would proceed to name collection</span>';
+        } else {
+          $('authResult').innerHTML = `<span class="text-red-500">${data.message || 'Check failed'}</span>`;
+        }
+      } catch (err) {
+        $('authResult').innerHTML = `<span class="text-red-500">Error: ${err.message}</span>`;
+      }
+    });
+
+    // Load courses on page load
+    $('fetchCourses').click();
+  </script>
 </body>
 </html>
