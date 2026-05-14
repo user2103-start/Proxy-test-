@@ -3,51 +3,58 @@ const fetch = require('node-fetch');
 const BASE_URL = 'https://api.thescholarverse.site';
 
 module.exports = async (req, res) => {
-  const { pathname } = req.url;
-  const token = req.headers.authorization;
+  const { pathname, query } = req;
+  const method = req.method;
 
-  console.log(`[Proxy] ${req.method} ${pathname}`);
+  console.log(`[Proxy] ${method} ${pathname}`);
 
-  // ====================== LOGIN ======================
-  if (pathname === '/api/login') {
+  // ====================== SEND OTP / CHECK USER ======================
+  if (pathname === '/api/check-user') {
+    const { mobile } = query;
+    if (!mobile) return res.status(400).json({ error: "Mobile number required" });
+
     try {
-      const body = req.body;
-      console.log('[Login Request Body]', body);
-
-      const response = await fetch(`${BASE_URL}/missionjeet/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
+      const response = await fetch(`${BASE_URL}/missionjeet/auth/check-user?mobile=${mobile}&device_id=xyz`);
       const data = await response.json();
-      console.log('[Login Response]', data);
-
-      return res.status(response.status).json(data);
+      return res.status(200).json(data);
     } catch (err) {
-      console.error('[Login Error]', err);
-      return res.status(500).json({ error: 'Login proxy failed', message: err.message });
+      return res.status(500).json({ error: "Failed to send OTP" });
     }
   }
 
-  // ====================== CONTENT ======================
+  // ====================== VERIFY OTP ======================
+  if (pathname === '/api/verify-otp') {
+    const { mobile, otp, name = "Guest" } = query;
+    if (!mobile || !otp) return res.status(400).json({ error: "Mobile and OTP required" });
+
+    try {
+      const response = await fetch(
+        `${BASE_URL}/missionjeet/auth/verify-otp?mobile=${mobile}&otp=${otp}&device_id=xyz&name=${encodeURIComponent(name)}`
+      );
+      const data = await response.json();
+      return res.status(200).json(data);
+    } catch (err) {
+      return res.status(500).json({ error: "Verification failed" });
+    }
+  }
+
+  // ====================== CONTENT DETAILS ======================
   if (pathname.startsWith('/api/content/')) {
     const courseId = pathname.split('/').pop();
-    const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
-    const batchId = urlParams.get('batch_id');
+    const batchId = query.batch_id || 1;
+    const token = req.headers.authorization;
 
     try {
       const response = await fetch(
         `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
         { headers: { Authorization: token || '' } }
       );
-
       const data = await response.json();
       return res.status(200).json(data);
     } catch (err) {
-      return res.status(500).json({ error: 'Content proxy failed' });
+      return res.status(500).json({ error: "Failed to fetch content" });
     }
   }
 
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ error: "Route not found" });
 };
