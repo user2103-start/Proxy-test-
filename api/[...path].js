@@ -1,113 +1,43 @@
-const BASE_URL = 'https://api.thescholarverse.site';
+// api/proxy.js
+// Fallback for any API calls that need dynamic handling
+// Main proxying is done via vercel.json rewrites (faster)
+// This handles OPTIONS preflight and any custom logic
 
 export default async function handler(req, res) {
-  try {
-    const url = new URL(req.url, `http://${req.headers.host}`);
-
-    const pathname = url.pathname;
-
-    const query = Object.fromEntries(url.searchParams);
-
-    console.log(`[Proxy] ${req.method} ${pathname}`);
-
-    // ====================== CHECK USER ======================
-    if (pathname === '/api/check-user') {
-      const {
-        mobile,
-        device_id = 'xyz'
-      } = query;
-
-      if (!mobile) {
-        return res.status(400).json({
-          error: 'Mobile number required',
-        });
-      }
-
-      const response = await fetch(
-        `${BASE_URL}/missionjeet/auth/check-user?mobile=${mobile}&device_id=${device_id}`
-      );
-
-      const data = await response.json();
-
-      return res.status(200).json(data);
-    }
-
-    // ====================== VERIFY OTP ======================
-    if (pathname === '/api/verify-otp') {
-      const {
-        mobile,
-        otp,
-        device_id = 'xyz',
-        name = 'Guest'
-      } = query;
-
-      if (!mobile || !otp) {
-        return res.status(400).json({
-          error: 'Mobile and OTP required',
-        });
-      }
-
-      const response = await fetch(
-        `${BASE_URL}/missionjeet/auth/verify-otp?mobile=${mobile}&otp=${otp}&device_id=${device_id}&name=${encodeURIComponent(name)}`
-      );
-
-      const data = await response.json();
-
-      return res.status(200).json(data);
-    }
-
-    // ====================== CONTENT DETAILS ======================
-const BASE_URL = 'https://api.thescholarverse.site';
-
-export default async function handler(req, res) {
-
-  try {
-
-    const { id } = req.query;
-
-    const batchId = req.query.batch_id || 1;
-
-    const token = req.headers.authorization || '';
-
-    const response = await fetch(
-      `${BASE_URL}/missionjeet/course/content-details/${id}?batch_id=${batchId}`,
-      {
-        headers: {
-          Authorization: token.startsWith('Bearer ')
-            ? token
-            : `Bearer ${token}`,
-          Accept: 'application/json',
-        },
-      }
-    );
-
-    const data = await response.json();
-
-    return res.status(200).json(data);
-
-  } catch (err) {
-
-    console.error(err);
-
-    return res.status(500).json({
-      error: err.message,
-    });
-
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Id');
+    return res.status(200).end();
   }
 
-}
+  // Extract the target path from the query
+  // Usage: /api/proxy?target=/missionjeet/auth/check-user&mobile=...&device_id=...
+  const target = req.query.target;
+  
+  if (!target) {
+    return res.status(400).json({ error: 'Missing target parameter' });
+  }
 
-    // ====================== 404 ======================
-    return res.status(404).json({
-      error: 'Route not found',
+  const baseUrl = 'https://api.thescholarverse.site';
+  const url = `${baseUrl}${target}${req.url.includes('?') ? '&' + req.url.split('?').slice(1).join('?') : ''}`;
+
+  try {
+    const response = await fetch(url, {
+      method: req.method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(req.headers.authorization ? { 'Authorization': req.headers.authorization } : {}),
+        ...(req.headers['x-device-id'] ? { 'x-device-id': req.headers['x-device-id'] } : {})
+      },
+      body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
     });
 
-  } catch (err) {
-    console.error(err);
-
-    return res.status(500).json({
-      error: 'Internal server error',
-      message: err.message,
-    });
+    const data = await response.json();
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.status(response.status).json(data);
+  } catch (error) {
+    return res.status(502).json({ error: 'Proxy error', message: error.message });
   }
 }
