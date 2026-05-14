@@ -1,60 +1,94 @@
-const fetch = require('node-fetch');
-
 const BASE_URL = 'https://api.thescholarverse.site';
 
-module.exports = async (req, res) => {
-  const { pathname, query } = req;
-  const method = req.method;
+export default async function handler(req, res) {
+  try {
+    const url = new URL(req.url, `http://${req.headers.host}`);
 
-  console.log(`[Proxy] ${method} ${pathname}`);
+    const pathname = url.pathname;
 
-  // ====================== SEND OTP / CHECK USER ======================
-  if (pathname === '/api/check-user') {
-    const { mobile } = query;
-    if (!mobile) return res.status(400).json({ error: "Mobile number required" });
+    const query = Object.fromEntries(url.searchParams);
 
-    try {
-      const response = await fetch(`${BASE_URL}/missionjeet/auth/check-user?mobile=${mobile}&device_id=xyz`);
-      const data = await response.json();
-      return res.status(200).json(data);
-    } catch (err) {
-      return res.status(500).json({ error: "Failed to send OTP" });
-    }
-  }
+    console.log(`[Proxy] ${req.method} ${pathname}`);
 
-  // ====================== VERIFY OTP ======================
-  if (pathname === '/api/verify-otp') {
-    const { mobile, otp, name = "Guest" } = query;
-    if (!mobile || !otp) return res.status(400).json({ error: "Mobile and OTP required" });
+    // ====================== CHECK USER ======================
+    if (pathname === '/api/check-user') {
+      const {
+        mobile,
+        device_id = 'xyz'
+      } = query;
 
-    try {
+      if (!mobile) {
+        return res.status(400).json({
+          error: 'Mobile number required',
+        });
+      }
+
       const response = await fetch(
-        `${BASE_URL}/missionjeet/auth/verify-otp?mobile=${mobile}&otp=${otp}&device_id=xyz&name=${encodeURIComponent(name)}`
+        `${BASE_URL}/missionjeet/auth/check-user?mobile=${mobile}&device_id=${device_id}`
       );
+
       const data = await response.json();
+
       return res.status(200).json(data);
-    } catch (err) {
-      return res.status(500).json({ error: "Verification failed" });
     }
-  }
 
-  // ====================== CONTENT DETAILS ======================
-  if (pathname.startsWith('/api/content/')) {
-    const courseId = pathname.split('/').pop();
-    const batchId = query.batch_id || 1;
-    const token = req.headers.authorization;
+    // ====================== VERIFY OTP ======================
+    if (pathname === '/api/verify-otp') {
+      const {
+        mobile,
+        otp,
+        device_id = 'xyz',
+        name = 'Guest'
+      } = query;
 
-    try {
+      if (!mobile || !otp) {
+        return res.status(400).json({
+          error: 'Mobile and OTP required',
+        });
+      }
+
+      const response = await fetch(
+        `${BASE_URL}/missionjeet/auth/verify-otp?mobile=${mobile}&otp=${otp}&device_id=${device_id}&name=${encodeURIComponent(name)}`
+      );
+
+      const data = await response.json();
+
+      return res.status(200).json(data);
+    }
+
+    // ====================== CONTENT DETAILS ======================
+    if (pathname.startsWith('/api/content/')) {
+      const courseId = pathname.split('/').pop();
+
+      const batchId = query.batch_id || 1;
+
+      const token = req.headers.authorization || '';
+
       const response = await fetch(
         `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
-        { headers: { Authorization: token || '' } }
+        {
+          headers: {
+            Authorization: token,
+          },
+        }
       );
-      const data = await response.json();
-      return res.status(200).json(data);
-    } catch (err) {
-      return res.status(500).json({ error: "Failed to fetch content" });
-    }
-  }
 
-  res.status(404).json({ error: "Route not found" });
-};
+      const data = await response.json();
+
+      return res.status(200).json(data);
+    }
+
+    // ====================== 404 ======================
+    return res.status(404).json({
+      error: 'Route not found',
+    });
+
+  } catch (err) {
+    console.error(err);
+
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: err.message,
+    });
+  }
+}
