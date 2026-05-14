@@ -1,19 +1,10 @@
 {
-  "name": "mission-jeet-proxy",
+  "name": "scholarverse-proxy",
   "version": "1.0.0",
-  "description": "Mission JEET proxy website with Live Classes and auto-update",
-  "main": "index.html",
   "scripts": {
-    "start": "serve public",
-    "build": "echo 'No build needed'",
-    "deploy": "vercel --prod"
+    "dev": "vercel dev"
   },
-  "dependencies": {},
-  "devDependencies": {
-    "serve": "^14.0.0",
-    "vercel": "^32.0.0"
-  },
-  "keywords": ["proxy", "vercel", "mission-jeet"],
-  "author": "",
-  "license": "MIT"
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  }
 }
