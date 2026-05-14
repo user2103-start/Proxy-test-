@@ -6,33 +6,40 @@ module.exports = async (req, res) => {
   const { pathname } = req.url;
   const token = req.headers.authorization;
 
-  // ====================== LOGIN API ======================
+  console.log(`[Proxy] ${req.method} ${pathname}`);
+
+  // ====================== LOGIN ======================
   if (pathname === '/api/login') {
     try {
-      const response = await fetch(`${BASE_URL}/auth/login`, {
+      const body = req.body;
+      console.log('[Login Request Body]', body);
+
+      const response = await fetch(`${BASE_URL}/missionjeet/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body)
+        body: JSON.stringify(body)
       });
 
       const data = await response.json();
+      console.log('[Login Response]', data);
+
       return res.status(response.status).json(data);
     } catch (err) {
-      return res.status(500).json({ error: 'Login proxy failed' });
+      console.error('[Login Error]', err);
+      return res.status(500).json({ error: 'Login proxy failed', message: err.message });
     }
   }
 
-  // ====================== CONTENT API ======================
+  // ====================== CONTENT ======================
   if (pathname.startsWith('/api/content/')) {
     const courseId = pathname.split('/').pop();
-    const batchId = new URLSearchParams(req.url.split('?')[1] || '').get('batch_id');
+    const urlParams = new URLSearchParams(req.url.split('?')[1] || '');
+    const batchId = urlParams.get('batch_id');
 
     try {
       const response = await fetch(
         `${BASE_URL}/missionjeet/course/content-details/${courseId}?batch_id=${batchId}`,
-        {
-          headers: { Authorization: token || '' }
-        }
+        { headers: { Authorization: token || '' } }
       );
 
       const data = await response.json();
