@@ -18,45 +18,41 @@
 <body>
 
 <div class="container" id="loginScreen">
-  <h2>Mobile OTP Login</h2>
-  <input type="tel" id="mobile" placeholder="Enter 10-digit Mobile" maxlength="10"/>
+  <h2>Login with Mobile OTP</h2>
+  <input type="tel" id="mobile" placeholder="10 digit mobile number" maxlength="10"/>
   <button onclick="sendOTP()">Send OTP</button>
 
   <div id="otpSection" style="display:none; margin-top:15px;">
-    <input type="text" id="otp" placeholder="Enter 6-digit OTP" maxlength="6"/>
-    <input type="text" id="name" placeholder="Your Name (Optional)" value="Guest"/>
-    <button onclick="verifyOTP()">Verify OTP & Login</button>
+    <input type="text" id="otp" placeholder="Enter OTP" maxlength="6"/>
+    <input type="text" id="name" placeholder="Your Name" value="Guest"/>
+    <button onclick="verifyOTP()">Verify OTP</button>
   </div>
 </div>
 
 <div class="container" id="playerScreen" style="display:none;">
-  <h1>ScholarVerse Video Proxy</h1>
+  <h1>ScholarVerse Proxy</h1>
   
-  <div>
-    <select id="courseId">
-      <option value="151">Course 151</option>
-      <option value="152">Course 152</option>
-    </select>
-    <input type="text" id="batchId" placeholder="Batch ID" value="1"/>
-    <button onclick="loadVideo()">Load Video</button>
-    <button onclick="logout()">Logout</button>
-  </div>
+  <select id="courseId">
+    <option value="151">Course 151</option>
+    <option value="152">Course 152</option>
+  </select>
+  <input type="text" id="batchId" placeholder="Batch ID" value="1"/>
+  <button onclick="loadVideo()">Load Video</button>
+  <button onclick="logout()">Logout</button>
 
   <div id="info"></div>
   <div class="video-container"><video id="video" controls></video></div>
 
-  <div>
-    <label>Quality: </label>
-    <select id="qualitySelect" onchange="changeQuality(this.value)"></select>
-    
-    <label style="margin-left:20px">Speed: </label>
-    <select onchange="changeSpeed(this.value)">
-      <option value="0.5">0.5x</option>
-      <option value="1" selected>1x</option>
-      <option value="1.5">1.5x</option>
-      <option value="2">2x</option>
-    </select>
-  </div>
+  <label>Quality: </label>
+  <select id="qualitySelect" onchange="changeQuality(this.value)"></select>
+
+  <label style="margin-left:20px">Speed: </label>
+  <select onchange="changeSpeed(this.value)">
+    <option value="0.5">0.5x</option>
+    <option value="1" selected>1x</option>
+    <option value="1.5">1.5x</option>
+    <option value="2">2x</option>
+  </select>
 
   <div style="margin-top:20px;">
     <h3>Bookmarks</h3>
@@ -72,16 +68,16 @@
 
   async function sendOTP() {
     const mobile = document.getElementById('mobile').value.trim();
-    if (mobile.length !== 10) return alert("Enter valid 10-digit mobile number");
+    if (mobile.length !== 10) return alert("Enter 10 digit number");
 
     const res = await fetch(`/api/check-user?mobile=${mobile}`);
     const data = await res.json();
 
     if (data.success) {
       document.getElementById('otpSection').style.display = 'block';
-      alert("OTP Sent Successfully!");
+      alert("OTP Sent!");
     } else {
-      alert(data.message || "Failed to send OTP");
+      alert(data.message || "Failed");
     }
   }
 
@@ -118,45 +114,42 @@
     document.getElementById('info').innerHTML = `<h2>${lesson.title}</h2>`;
 
     const video = document.getElementById('video');
-    const streamUrl = lesson.file_url || Object.values(lesson.download_urls || {})[0];
+    const url = lesson.file_url || Object.values(lesson.download_urls || {})[0];
 
     if (hls) hls.destroy();
 
-    if (streamUrl.includes('.m3u8') && Hls.isSupported()) {
+    if (url.includes('.m3u8') && Hls.isSupported()) {
       hls = new Hls();
-      hls.loadSource(streamUrl);
+      hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => populateQualitySelector(hls));
     } else {
-      video.src = streamUrl;
+      video.src = url;
     }
 
     video.ontimeupdate = () => currentTime = video.currentTime;
   }
 
-  function populateQualitySelector(hlsInstance) {
-    const select = document.getElementById('qualitySelect');
-    select.innerHTML = '<option value="-1">Auto</option>';
-    hlsInstance.levels.forEach((level, i) => {
-      select.appendChild(new Option(`${level.height}p`, i));
-    });
+  function populateQualitySelector(h) {
+    const sel = document.getElementById('qualitySelect');
+    sel.innerHTML = '<option value="-1">Auto</option>';
+    h.levels.forEach((l,i) => sel.appendChild(new Option(l.height + "p", i)));
   }
 
-  function changeQuality(level) { if (hls) hls.currentLevel = parseInt(level); }
-  function changeSpeed(speed) { document.getElementById('video').playbackRate = parseFloat(speed); }
+  function changeQuality(l) { if (hls) hls.currentLevel = parseInt(l); }
+  function changeSpeed(s) { document.getElementById('video').playbackRate = parseFloat(s); }
 
   function addBookmark() {
-    const title = prompt("Enter Bookmark Title:");
+    const title = prompt("Bookmark title:");
     if (title) {
-      bookmarks.push({ time: currentTime, title });
+      bookmarks.push({time: currentTime, title});
       renderBookmarks();
     }
   }
 
   function renderBookmarks() {
-    const div = document.getElementById('bookmarks');
-    div.innerHTML = bookmarks.map((b, i) => `
-      <div style="margin:5px 0;padding:8px;background:#f8f9fa;border-radius:6px;">
+    document.getElementById('bookmarks').innerHTML = bookmarks.map((b,i) => `
+      <div style="margin:5px 0; padding:8px; background:#f8f9fa;">
         ${Math.floor(b.time/60)}:${(b.time%60).toFixed(0).padStart(2,'0')} - ${b.title}
         <button onclick="seekTo(${b.time})">Play</button>
         <button onclick="deleteBookmark(${i})">Delete</button>
@@ -164,7 +157,7 @@
     `).join('');
   }
 
-  function seekTo(time) { document.getElementById('video').currentTime = time; }
+  function seekTo(t) { document.getElementById('video').currentTime = t; }
   function deleteBookmark(i) { bookmarks.splice(i,1); renderBookmarks(); }
   function logout() { localStorage.clear(); location.reload(); }
 </script>
