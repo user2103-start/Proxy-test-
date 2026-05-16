@@ -1,5 +1,5 @@
 {
-  "name": "scholarverse-proxy",
+  "name": "course.nexttopers.com",
   "version": "1.0.0",
   "scripts": {
     "dev": "vercel dev"
