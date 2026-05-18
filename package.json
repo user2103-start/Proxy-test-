@@ -1,10 +1,6 @@
 {
-  "name": "course.nexttopers.com",
+  "name": "nexttoppers-proxy",
   "version": "1.0.0",
-  "scripts": {
-    "dev": "vercel dev"
-  },
-  "dependencies": {
-    "node-fetch": "^3.3.2"
-  }
+  "type": "module",
+  "dependencies": {}
 }
