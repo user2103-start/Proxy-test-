@@ -10,11 +10,11 @@ const TEST = "https://test.nexttoppers.com";
 const APP_ID      = "1772100600";
 const USER_COURSE = "3186295";
 const USER_TEST   = "4071072";
-const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
+const DEVICE_ID = "ae2fa506-85ca-418d-a449-ec5868dc6665";
 
 // Fallback token — update every 30 days
 // Current expiry: 11 June 2026
-const FALLBACK = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjQ1MDMzLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMTQ0N2Y0MjYtZjg4Yy00NTNkLTk0NTgtOWM2Y2ZkM2VhMDY4IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzg4NTc2ODIsImV4cCI6MTc4MTQ0OTY4Mn0.XrQ2a-xFIP5GFy2mloA0H6lMc5v5ahuSwqdHLn7cHOo";
+const FALLBACK = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3NzkzNzM5MTMsImV4cCI6MTc4MTk2NTkxM30.a9aCx3uzCS0W69KsiD_m4vwX11znneFvIn7JKSSPjQU";
 
 // In-memory cache (5 min TTL)
 const cache = new Map();
