@@ -1,0 +1,1428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Mission JEET - Learn with NextToppers</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #f5f5f5;
+            color: #1a1a2e;
+        }
+
+        /* Login Page Styles */
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .otp-section {
+            display: none;
+        }
+
+        .timer {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        /* Main App Styles */
+        .app-container {
+            display: none;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .logo-small {
+            font-size: 20px;
+            font-weight: bold;
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .bundle-badge {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: #f0f0f0;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: auto;
+        }
+
+        .course-banner {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .course-banner h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .course-banner p {
+            opacity: 0.9;
+        }
+
+        .course-selector {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .course-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 300px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .course-card img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .course-card-content {
+            padding: 20px;
+        }
+
+        .course-card h3 {
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .course-price {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 18px;
+            margin: 10px 0;
+        }
+
+        .course-card button {
+            margin-top: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 500;
+            width: auto;
+        }
+
+        .tab.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .content-area {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .breadcrumb {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 15px;
+            background: white;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .breadcrumb-item {
+            color: #667eea;
+            cursor: pointer;
+        }
+
+        .breadcrumb-item:last-child {
+            color: #333;
+            cursor: default;
+        }
+
+        .folders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .folder-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+
+        .folder-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .folder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .content-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .content-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .content-info {
+            flex: 1;
+        }
+
+        .content-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .content-badges {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-video {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-pdf {
+            background: #fce4ec;
+            color: #c2185b;
+        }
+
+        .badge-live {
+            background: #ffebee;
+            color: #d32f2f;
+            animation: pulse 1.5s infinite;
+        }
+
+        .badge-upcoming {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .content-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .play-btn, .pdf-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            width: auto;
+        }
+
+        .play-btn {
+            background: #667eea;
+        }
+
+        .pdf-btn {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        /* Player Modal Styles */
+        .player-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .player-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .close-player {
+            background: none;
+            font-size: 24px;
+            width: auto;
+            padding: 5px 15px;
+        }
+
+        .video-wrapper {
+            background: black;
+            position: relative;
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            max-height: 60vh;
+        }
+
+        .player-controls {
+            background: #1a1a2e;
+            padding: 15px 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-group label {
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        .control-group select {
+            padding: 6px 12px;
+            border-radius: 6px;
+            background: #2d2d44;
+            color: white;
+            border: none;
+        }
+
+        .live-chat {
+            background: #1a1a2e;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+            margin-top: 10px;
+        }
+
+        .chat-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid #2d2d44;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .chat-message {
+            padding: 8px 12px;
+            border-radius: 12px;
+            max-width: 80%;
+            word-break: break-word;
+        }
+
+        .chat-message.mine {
+            background: #667eea;
+            align-self: flex-end;
+        }
+
+        .chat-message.other {
+            background: #2d2d44;
+            align-self: flex-start;
+        }
+
+        .chat-username {
+            font-size: 10px;
+            opacity: 0.7;
+            margin-bottom: 4px;
+        }
+
+        .chat-text {
+            font-size: 13px;
+        }
+
+        .chat-input-area {
+            padding: 12px;
+            border-top: 1px solid #2d2d44;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 20px;
+            background: #2d2d44;
+            border: none;
+            color: white;
+        }
+
+        .chat-input-area button {
+            width: auto;
+            padding: 10px 20px;
+        }
+
+        .countdown {
+            text-align: center;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .countdown-timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            margin-top: 20px;
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 15px;
+            border: none;
+            width: auto;
+        }
+
+        @media (max-width: 768px) {
+            .folders-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+
+            .content-item {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .chat-message {
+                max-width: 95%;
+            }
+
+            .course-card {
+                width: 100%;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <div class="logo">
+                <h1>🎯 Mission JEET</h1>
+                <p>Learn with NextToppers</p>
+            </div>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+            
+            <div class="input-group">
+                <label>📱 Mobile Number</label>
+                <input type="tel" id="mobile" placeholder="9876543210" maxlength="10">
+            </div>
+            <button id="sendOtpBtn">Send OTP →</button>
+            
+            <div id="otpSection" class="otp-section">
+                <div class="input-group" style="margin-top: 20px;">
+                    <label>🔐 OTP</label>
+                    <input type="text" id="otp" placeholder="123456" maxlength="6">
+                </div>
+                <button id="verifyOtpBtn">Verify & Login →</button>
+                <div id="timer" class="timer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Landing Page (Course Selection) -->
+    <div id="landingPage" class="app-container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-small">🎯 Mission JEET</div>
+                <div class="user-info">
+                    <span id="landingUserName">👤 Student</span>
+                    <button id="landingLogoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+        <div class="course-banner">
+            <h2>Choose Your Course</h2>
+            <p>Select a course to start learning</p>
+        </div>
+        <div id="courseSelector" class="course-selector">
+            <div class="loading">Loading courses...</div>
+        </div>
+    </div>
+
+    <!-- Course Content Page -->
+    <div id="coursePage" class="app-container">
+        <div class="header">
+            <div class="header-content">
+                <div class="logo-small" id="homeBtn">🎯 Mission JEET</div>
+                <div id="bundleBadge" class="bundle-badge" style="display: none;">
+                    📦 PRARAMBH Science Batch
+                </div>
+                <div class="user-info">
+                    <span id="courseUserName">👤 Student</span>
+                    <button id="courseLogoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="courseBanner" class="course-banner">
+            <h2 id="courseTitle">Drona JEE Class 11th</h2>
+            <p id="courseDescription">Loading course details...</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="content">📚 Content</button>
+            <button class="tab" data-tab="live">🔴 Live Classes</button>
+            <button class="tab" data-tab="upcoming">⏰ Upcoming</button>
+        </div>
+
+        <div class="content-area">
+            <div id="breadcrumb" class="breadcrumb"></div>
+            <div id="foldersGrid" class="folders-grid"></div>
+            <div id="contentList" class="content-list"></div>
+            <div id="loadingMessage" class="loading" style="display: none;">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div id="playerModal" class="player-modal">
+        <div class="player-header">
+            <span id="playerTitle">Video Player</span>
+            <button class="close-player" id="closePlayerBtn">✕</button>
+        </div>
+        <div class="video-wrapper">
+            <video id="videoPlayer" controls></video>
+        </div>
+        <div class="player-controls">
+            <div class="control-group">
+                <label>📺 Quality</label>
+                <select id="qualitySelect">
+                    <option value="auto">Auto</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>⚡ Speed</label>
+                <select id="speedSelect">
+                    <option value="0.5">0.5x</option>
+                    <option value="0.75">0.75x</option>
+                    <option value="1" selected>1x</option>
+                    <option value="1.25">1.25x</option>
+                    <option value="1.5">1.5x</option>
+                    <option value="2">2x</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <button id="downloadVideoBtn">⬇ Download</button>
+            </div>
+        </div>
+        <div id="liveChatContainer" class="live-chat" style="display: none;">
+            <div class="chat-header">💬 Live Discussion</div>
+            <div id="chatMessages" class="chat-messages"></div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type your message...">
+                <button id="sendChatBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // COMPLETE FRONTEND CODE - Mission JEET
+        // ============================================================
+
+        // Configuration
+        const PROXY_URL = '/api/proxy';
+        
+        // Global state
+        let currentCourseId = null;
+        let currentFolderId = '0';
+        let currentFolderPath = [{ id: '0', title: 'Home' }];
+        let allContent = [];
+        let currentTokens = {
+            accessToken: null,
+            refreshToken: null,
+            expiresIn: null
+        };
+        let currentVideoInfo = null;
+        let chatClient = null;
+
+        // ============================================================
+        // TOKEN MANAGEMENT
+        // ============================================================
+        
+        function isTokenExpired() {
+            if (!currentTokens.expiresIn) return true;
+            return Date.now() >= (parseInt(currentTokens.expiresIn) - 5 * 60 * 1000);
+        }
+
+        function saveTokens(accessToken, refreshToken, expiresIn) {
+            currentTokens = { accessToken, refreshToken, expiresIn };
+            localStorage.setItem('accessToken', accessToken);
+            localStorage.setItem('refreshToken', refreshToken);
+            localStorage.setItem('tokenExpiry', expiresIn);
+            localStorage.setItem('userId', '3186295');
+        }
+
+        function loadTokens() {
+            currentTokens.accessToken = localStorage.getItem('accessToken');
+            currentTokens.refreshToken = localStorage.getItem('refreshToken');
+            currentTokens.expiresIn = localStorage.getItem('tokenExpiry');
+            return currentTokens.accessToken;
+        }
+
+        function clearTokens() {
+            currentTokens = { accessToken: null, refreshToken: null, expiresIn: null };
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('tokenExpiry');
+            localStorage.removeItem('userId');
+        }
+
+        async function refreshToken() {
+            try {
+                const response = await fetch(`${PROXY_URL}?action=refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refreshToken: currentTokens.refreshToken })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    saveTokens(data.accessToken, currentTokens.refreshToken, data.expiresIn);
+                    return data.accessToken;
+                }
+                throw new Error('Refresh failed');
+            } catch (error) {
+                clearTokens();
+                showLogin();
+                throw error;
+            }
+        }
+
+        async function apiRequest(action, params = {}, method = 'GET', body = null) {
+            let url = `${PROXY_URL}?action=${action}`;
+            if (method === 'GET' && Object.keys(params).length) {
+                url += '&' + new URLSearchParams(params).toString();
+            }
+
+            let token = currentTokens.accessToken;
+            if (token && isTokenExpired()) {
+                token = await refreshToken();
+            }
+
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            };
+
+            if (currentTokens.refreshToken) {
+                options.headers['X-Refresh-Token'] = currentTokens.refreshToken;
+            }
+
+            if (method === 'POST' && body) {
+                options.body = JSON.stringify(body);
+            } else if (method === 'POST' && Object.keys(params).length) {
+                options.body = JSON.stringify(params);
+            }
+
+            const response = await fetch(url, options);
+            const data = await response.json();
+
+            if (response.status === 401) {
+                const newToken = await refreshToken();
+                options.headers['Authorization'] = `Bearer ${newToken}`;
+                const retryResponse = await fetch(url, options);
+                return retryResponse.json();
+            }
+
+            return data;
+        }
+
+        // ============================================================
+        // API FUNCTIONS
+        // ============================================================
+
+        async function sendOTP(mobile) {
+            return apiRequest('sendotp', {}, 'POST', { mobile });
+        }
+
+        async function verifyOTP(mobile, otp) {
+            return apiRequest('verifyotp', {}, 'POST', { mobile, otp });
+        }
+
+        async function getCourseDetails(courseId) {
+            return apiRequest('course', { course_id: courseId });
+        }
+
+        async function getContent(courseId, folderId = '0', parentCourseId = '0') {
+            return apiRequest('content', {
+                course_id: courseId,
+                folder_id: folderId,
+                parent_course_id: parentCourseId
+            });
+        }
+
+        async function getVideoDetails(contentId, courseId) {
+            return apiRequest('video', { content_id: contentId, course_id: courseId });
+        }
+
+        // ============================================================
+        // UTILITY FUNCTIONS
+        // ============================================================
+
+        function formatDuration(seconds) {
+            if (!seconds || seconds === 0) return '--:--';
+            const hours = Math.floor(seconds / 3600);
+            const minutes = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            if (hours > 0) {
+                return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function isLiveClass(item) {
+            return item.data?.file_type === 2 && 
+                   item.data?.video_type === 3 && 
+                   item.data?.is_live === 1;
+        }
+
+        function isUpcomingClass(item) {
+            return item.data?.file_type === 2 && 
+                   item.data?.video_type === 3 && 
+                   item.data?.is_live === 0;
+        }
+
+        function isRecordedVideo(item) {
+            return item.data?.file_type === 2 && item.data?.video_type === 4;
+        }
+
+        function isPDF(item) {
+            return item.data?.file_type === 1 || item.data?.file_type === 5;
+        }
+
+        function showLoading(show) {
+            document.getElementById('loadingMessage').style.display = show ? 'flex' : 'none';
+        }
+
+        // ============================================================
+        // UI RENDERING - COURSE PAGE
+        // ============================================================
+
+        function renderBreadcrumb() {
+            const container = document.getElementById('breadcrumb');
+            if (!container) return;
+            container.innerHTML = currentFolderPath.map((folder, index) => {
+                const isLast = index === currentFolderPath.length - 1;
+                return `<span class="breadcrumb-item" data-folder-id="${folder.id}" ${isLast ? '' : 'style="color:#667eea;cursor:pointer"'}>
+                    ${folder.title === 'Home' ? '🏠 Home' : folder.title}
+                </span>${!isLast ? '<span> › </span>' : ''}`;
+            }).join('');
+            
+            document.querySelectorAll('.breadcrumb-item[data-folder-id]').forEach(el => {
+                if (el.getAttribute('data-folder-id') !== currentFolderId) {
+                    el.addEventListener('click', () => navigateToFolder(el.getAttribute('data-folder-id'), el.innerText.trim()));
+                }
+            });
+        }
+
+        function renderFolders(folders) {
+            const container = document.getElementById('foldersGrid');
+            if (!container) return;
+            if (!folders.length) {
+                container.innerHTML = '';
+                return;
+            }
+            container.innerHTML = folders.map(folder => `
+                <div class="folder-card" data-folder-id="${folder.entity_id || folder.id}">
+                    <div class="folder-icon">📁</div>
+                    <div>${folder.title}</div>
+                </div>
+            `).join('');
+            
+            container.querySelectorAll('.folder-card').forEach(el => {
+                el.addEventListener('click', () => navigateToFolder(el.dataset.folderId, el.querySelector('div:last-child').innerText));
+            });
+        }
+
+        function renderContent(items) {
+            const container = document.getElementById('contentList');
+            if (!container) return;
+            if (!items.length) {
+                container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">No content available</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => {
+                const isLive = isLiveClass(item);
+                const isUpcoming = isUpcomingClass(item);
+                const isVideo = isRecordedVideo(item);
+                const isPdf = isPDF(item);
+                
+                let badge = '';
+                if (isLive) badge = '<span class="badge badge-live">🔴 LIVE NOW</span>';
+                else if (isUpcoming) badge = '<span class="badge badge-upcoming">⏰ Upcoming</span>';
+                else if (isVideo) badge = '<span class="badge badge-video">🎬 Video</span>';
+                else if (isPdf) badge = '<span class="badge badge-pdf">📄 PDF</span>';
+                
+                const duration = item.data?.duration ? formatDuration(item.data.duration) : '';
+                const durationHtml = duration ? `<div style="font-size:12px;color:#888;">${duration}</div>` : '';
+                
+                return `
+                    <div class="content-item" data-content-id="${item.entity_id}" data-file-type="${item.data?.file_type}">
+                        <div class="content-info">
+                            <div class="content-title">${escapeHtml(item.title)}</div>
+                            <div class="content-badges">${badge}</div>
+                            ${durationHtml}
+                        </div>
+                        <div class="content-actions">
+                            ${(isVideo || isLive) ? `<button class="play-btn" data-id="${item.entity_id}">▶ Play</button>` : ''}
+                            ${isPdf ? `<button class="pdf-btn" data-id="${item.entity_id}">📑 View PDF</button>` : ''}
+                            ${isUpcoming ? `<button class="play-btn" disabled style="opacity:0.5;">⏰ Coming Soon</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.querySelectorAll('.play-btn[data-id]').forEach(btn => {
+                btn.addEventListener('click', () => playContent(btn.dataset.id));
+            });
+            document.querySelectorAll('.pdf-btn[data-id]').forEach(btn => {
+                btn.addEventListener('click', () => openPDF(btn.dataset.id));
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function navigateToFolder(folderId, folderTitle) {
+            currentFolderId = folderId;
+            currentFolderPath.push({ id: folderId, title: folderTitle || 'Content' });
+            await loadCourseContent();
+        }
+
+        async function playContent(contentId) {
+            showLoading(true);
+            try {
+                const data = await getVideoDetails(contentId, currentCourseId);
+                if (data.success && data.data) {
+                    currentVideoInfo = data.data;
+                    showPlayerModal();
+                } else {
+                    alert('Video URL not available');
+                }
+            } catch (error) {
+                alert('Error loading video: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function openPDF(contentId) {
+            showLoading(true);
+            try {
+                const data = await getVideoDetails(contentId, currentCourseId);
+                if (data.success && data.data && data.data.file_url) {
+                    window.open(data.data.file_url, '_blank');
+                } else {
+                    alert('PDF URL not available');
+                }
+            } catch (error) {
+                alert('Error loading PDF: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadCourseContent() {
+            showLoading(true);
+            try {
+                const data = await getContent(currentCourseId, currentFolderId);
+                if (data.success && data.data) {
+                    allContent = data.data;
+                    
+                    const folders = allContent.filter(item => item.type === 'folder');
+                    const files = allContent.filter(item => item.type === 'file');
+                    
+                    renderFolders(folders);
+                    renderContent(files);
+                    renderBreadcrumb();
+                }
+            } catch (error) {
+                console.error('Error loading content:', error);
+                const contentList = document.getElementById('contentList');
+                if (contentList) contentList.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">Error loading content</div>';
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function loadCourseBanner() {
+            try {
+                const data = await getCourseDetails(currentCourseId);
+                if (data.success && data.data && data.data[0]?.data?.layout_data?.[0]) {
+                    const course = data.data[0].data.layout_data[0];
+                    const titleEl = document.getElementById('courseTitle');
+                    const descEl = document.getElementById('courseDescription');
+                    if (titleEl) titleEl.innerText = course.title;
+                    if (descEl) descEl.innerHTML = (course.description?.substring(0, 200) || '') + '...';
+                    
+                    const packages = data.data[0].data.layout_data.find(l => l.layout_type === 'packages');
+                    const bundleBadge = document.getElementById('bundleBadge');
+                    if (bundleBadge && packages && packages.layout_data?.length) {
+                        bundleBadge.style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading course:', error);
+            }
+        }
+
+        function filterContentByTab(tabName) {
+            const files = allContent.filter(item => item.type === 'file');
+            let filtered = files;
+            
+            if (tabName === 'live') {
+                filtered = files.filter(item => isLiveClass(item));
+            } else if (tabName === 'upcoming') {
+                filtered = files.filter(item => isUpcomingClass(item));
+            }
+            
+            renderContent(filtered);
+        }
+
+        // ============================================================
+        // LANDING PAGE (Course Selection)
+        // ============================================================
+
+        async function loadLandingPage() {
+            const container = document.getElementById('courseSelector');
+            if (!container) return;
+            
+            container.innerHTML = '<div class="loading">Loading courses...</div>';
+            
+            const courses = [
+                { id: 151, name: 'Drona JEE Class 11th', description: 'Complete JEE Preparation' },
+                { id: 152, name: 'Drona NEET Class 11th', description: 'Complete NEET Preparation' }
+            ];
+            
+            container.innerHTML = courses.map(course => `
+                <div class="course-card" data-course-id="${course.id}">
+                    <div class="course-card-content">
+                        <h3>${course.name}</h3>
+                        <p style="color:#666; font-size:14px; margin:8px 0;">${course.description}</p>
+                        <div class="course-price">Free</div>
+                        <button class="select-course-btn">View Course →</button>
+                    </div>
+                </div>
+            `).join('');
+            
+            document.querySelectorAll('.course-card').forEach(card => {
+                card.addEventListener('click', () => {
+                    const courseId = card.dataset.courseId;
+                    showCoursePage(courseId);
+                });
+            });
+        }
+
+        // ============================================================
+        // VIDEO PLAYER MODAL
+        // ============================================================
+
+        function showPlayerModal() {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('videoPlayer');
+            const titleEl = document.getElementById('playerTitle');
+            const chatContainer = document.getElementById('liveChatContainer');
+            
+            if (!modal || !video || !currentVideoInfo) return;
+            
+            titleEl.innerText = currentVideoInfo.title || 'Video Player';
+            
+            // Setup video source
+            if (currentVideoInfo.file_url) {
+                video.src = currentVideoInfo.file_url;
+                video.load();
+                
+                // Resume playback
+                const lastWatched = localStorage.getItem(`last_watched_${currentVideoInfo.id}`);
+                if (lastWatched) {
+                    video.currentTime = parseFloat(lastWatched);
+                }
+                
+                video.play();
+            }
+            
+            // Setup quality selector
+            const qualitySelect = document.getElementById('qualitySelect');
+            if (qualitySelect && currentVideoInfo.download_urls) {
+                try {
+                    const qualities = JSON.parse(currentVideoInfo.download_urls);
+                    qualitySelect.innerHTML = '<option value="auto">Auto</option>' + 
+                        qualities.map(q => `<option value="${q.url}">${q.title}p</option>`).join('');
+                    
+                    qualitySelect.onchange = () => {
+                        const selectedUrl = qualitySelect.value;
+                        if (selectedUrl !== 'auto') {
+                            const currentTime = video.currentTime;
+                            video.src = selectedUrl;
+                            video.currentTime = currentTime;
+                            video.play();
+                        }
+                    };
+                } catch(e) {}
+            }
+            
+            // Setup speed selector
+            const speedSelect = document.getElementById('speedSelect');
+            if (speedSelect) {
+                speedSelect.onchange = () => {
+                    video.playbackRate = parseFloat(speedSelect.value);
+                };
+            }
+            
+            // Setup download button
+            const downloadBtn = document.getElementById('downloadVideoBtn');
+            if (downloadBtn) {
+                downloadBtn.onclick = () => {
+                    if (currentVideoInfo.file_url) {
+                        window.open(currentVideoInfo.file_url, '_blank');
+                    }
+                };
+            }
+            
+            // Save last watched time
+            video.ontimeupdate = () => {
+                localStorage.setItem(`last_watched_${currentVideoInfo.id}`, video.currentTime);
+            };
+            
+            // Show/hide chat for live classes
+            if (currentVideoInfo.video_type === 3 && currentVideoInfo.is_live === 1) {
+                chatContainer.style.display = 'flex';
+                initLiveChat();
+            } else {
+                chatContainer.style.display = 'none';
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function initLiveChat() {
+            if (!currentVideoInfo.mqtt_live_cred) {
+                console.log('No MQTT credentials available');
+                return;
+            }
+            
+            console.log('✅ Live chat would initialize here with MQTT');
+            console.log(`Chat node: ${currentVideoInfo.mqtt_live_cred.public_chat_node}`);
+            console.log(`MQTT URL: ${currentVideoInfo.mqtt_live_cred.mqtt_chat_url}`);
+            
+            // Setup chat UI
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendChatBtn');
+            const chatMessages = document.getElementById('chatMessages');
+            
+            if (!chatInput || !sendBtn) return;
+            
+            // Mock chat for now - will be replaced with actual MQTT
+            sendBtn.onclick = () => {
+                const message = chatInput.value.trim();
+                if (message) {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = 'chat-message mine';
+                    msgDiv.innerHTML = `<div class="chat-text">${escapeHtml(message)}</div>`;
+                    chatMessages.appendChild(msgDiv);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                    chatInput.value = '';
+                    
+                    console.log('Sending message:', message);
+                }
+            };
+            
+            chatInput.onkeypress = (e) => {
+                if (e.key === 'Enter') sendBtn.click();
+            };
+        }
+
+        function closePlayerModal() {
+            const modal = document.getElementById('playerModal');
+            const video = document.getElementById('videoPlayer');
+            if (modal) modal.classList.remove('active');
+            if (video) video.pause();
+            
+            // Disconnect chat if active
+            if (chatClient) {
+                chatClient.disconnect();
+                chatClient = null;
+            }
+        }
+
+        // ============================================================
+        // PAGE NAVIGATION
+        // ============================================================
+
+        function showLandingPage() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('landingPage').style.display = 'block';
+            document.getElementById('coursePage').style.display = 'none';
+            loadLandingPage();
+        }
+
+        function showCoursePage(courseId) {
+            currentCourseId = courseId;
+            currentFolderId = '0';
+            currentFolderPath = [{ id: '0', title: 'Home' }];
+            
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('coursePage').style.display = 'block';
+            
+            loadCourseBanner();
+            loadCourseContent();
+            
+            // Setup tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.onclick = () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filterContentByTab(tab.dataset.tab);
+                };
+            });
+        }
+
+        function showLogin() {
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('coursePage').style.display = 'none';
+            document.getElementById('playerModal').classList.remove('active');
+        }
+
+        // ============================================================
+        // LOGIN FLOW
+        // ============================================================
+
+        let currentMobile = '';
+        let timerInterval = null;
+
+        document.getElementById('sendOtpBtn').onclick = async () => {
+            const mobile = document.getElementById('mobile').value;
+            if (!mobile || mobile.length !== 10) {
+                showLoginError('Enter valid 10-digit mobile number');
+                return;
+            }
+            
+            const btn = document.getElementById('sendOtpBtn');
+            btn.disabled = true;
+            btn.innerText = 'Sending...';
+            
+            try {
+                const data = await sendOTP(mobile);
+                if (data.success || data.responseCode === 3002) {
+                    currentMobile = mobile;
+                    document.getElementById('otpSection').style.display = 'block';
+                    startTimer(30);
+                    hideLoginError();
+                } else {
+                    showLoginError('Failed to send OTP. Try again.');
+                }
+            } catch (error) {
+                showLoginError('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Send OTP →';
+            }
+        };
+
+        document.getElementById('verifyOtpBtn').onclick = async () => {
+            const otp = document.getElementById('otp').value;
+            if (!otp || otp.length !== 6) {
+                showLoginError('Enter valid 6-digit OTP');
+                return;
+            }
+            
+            const btn = document.getElementById('verifyOtpBtn');
+            btn.disabled = true;
+            btn.innerText = 'Verifying...';
+            
+            try {
+                const data = await verifyOTP(currentMobile, otp);
+                if (data.success && data.accessToken) {
+                    saveTokens(data.accessToken, data.refreshToken, data.expiresIn);
+                    showLandingPage();
+                } else {
+                    showLoginError('Invalid OTP. Try again.');
+                }
+            } catch (error) {
+                showLoginError('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Verify & Login →';
+            }
+        };
+
+        function showLoginError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.innerText = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function hideLoginError() {
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        function startTimer(seconds) {
+            if (timerInterval) clearInterval(timerInterval);
+            let remaining = seconds;
+            const timerDiv = document.getElementById('timer');
+            timerDiv.innerText = `Resend in ${remaining}s`;
+            timerInterval = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerDiv.innerText = '';
+                    document.getElementById('sendOtpBtn').disabled = false;
+                } else {
+                    timerDiv.innerText = `Resend in ${remaining}s`;
+                }
+            }, 1000);
+        }
+
+        // ============================================================
+        // EVENT LISTENERS
+        // ============================================================
+
+        document.getElementById('closePlayerBtn')?.addEventListener('click', closePlayerModal);
+        
+        document.getElementById('homeBtn')?.addEventListener('click', () => showLandingPage());
+        
+        document.getElementById('landingLogoutBtn')?.addEventListener('click', () => {
+            clearTokens();
+            showLogin();
+        });
+        
+        document.getElementById('courseLogoutBtn')?.addEventListener('click', () => {
+            clearTokens();
+            showLogin();
+        });
+
+        // ============================================================
+        // INITIALIZATION
+        // ============================================================
+
+        if (loadTokens() && !isTokenExpired()) {
+            showLandingPage();
+        } else {
+            showLogin();
+        }
+    </script>
+</body>
+</html>
