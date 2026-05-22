@@ -1,7 +1,8 @@
-// api/proxy.js - Pure Proxy (No Frontend Logic)
-// Auth: auth.nexttoppers.com
-// Course: course.nexttoppers.com
-// Test: test.nexttoppers.com
+// ============================================================
+// COMPLETE PROXY SERVER - Mission JEET / Delta Study
+// Deploy on Vercel as serverless function
+// File: api/proxy.js
+// ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
 const NT   = "https://course.nexttoppers.com";
@@ -12,30 +13,56 @@ const USER_COURSE = "3186295";
 const USER_TEST   = "4071072";
 const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
 
-// Fallback token
+// Fallback token - valid until June 2026
 const FALLBACK = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3NzkzNzM5MTMsImV4cCI6MTc4MTk2NTkxM30.a9aCx3uzCS0W69KsiD_m4vwX11znneFvIn7JKSSPjQU";
 
-// Token cache
+// Token cache for auto-refresh
 const tokenCache = new Map();
 
-// Helper: Check token expiry
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
+function getUserId(tok) {
+  try {
+    if (!tok) return USER_COURSE;
+    const cleanToken = tok.startsWith("Bearer ") ? tok.slice(7) : tok;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    return String(payload.user_id || USER_COURSE);
+  } catch(e) { 
+    return USER_COURSE; 
+  }
+}
+
 function isTokenExpired(token) {
   if (!token) return true;
   try {
     const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
     const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
-    return Date.now() >= (payload.exp * 1000 - 5 * 60 * 1000);
+    const expiry = payload.exp * 1000;
+    return Date.now() >= (expiry - 5 * 60 * 1000);
   } catch(e) {
     return true;
   }
 }
 
-// Helper: Get valid token
+function getTokenExpiry(token) {
+  try {
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    return payload.exp * 1000;
+  } catch(e) {
+    return Date.now() + 30 * 24 * 60 * 60 * 1000;
+  }
+}
+
 async function getValidToken(userToken, refreshToken, sessionId) {
+  // If user provided their own token and it's valid, use it
   if (userToken && !isTokenExpired(userToken)) {
-    return `Bearer ${userToken}`;
+    return userToken.startsWith("Bearer ") ? userToken : `Bearer ${userToken}`;
   }
   
+  // Check cache for this session
   if (sessionId && tokenCache.has(sessionId)) {
     const cached = tokenCache.get(sessionId);
     if (!isTokenExpired(cached.accessToken)) {
@@ -43,54 +70,55 @@ async function getValidToken(userToken, refreshToken, sessionId) {
     }
   }
   
+  // Try to refresh using refreshToken
   if (refreshToken) {
     try {
       const refreshRes = await fetch(`${AUTH}/auth/refresh-token`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken })
+        body: JSON.stringify({ refreshToken: refreshToken })
       });
+      
       const refreshData = await refreshRes.json();
-      const newToken = refreshData.accessToken || refreshData.data?.accessToken;
-      if (newToken) {
-        const bearerToken = `Bearer ${newToken}`;
+      const newAccessToken = refreshData.accessToken || refreshData.data?.accessToken;
+      
+      if (newAccessToken) {
+        const bearerToken = `Bearer ${newAccessToken}`;
         if (sessionId) {
-          tokenCache.set(sessionId, { accessToken: bearerToken, refreshToken });
+          tokenCache.set(sessionId, {
+            accessToken: bearerToken,
+            refreshToken: refreshToken,
+            expiry: getTokenExpiry(newAccessToken)
+          });
         }
         return bearerToken;
       }
-    } catch(e) {}
+    } catch(e) {
+      console.error("Auto-refresh failed:", e.message);
+    }
   }
   
-  return userToken ? `Bearer ${userToken}` : FALLBACK;
+  // Fallback
+  return FALLBACK;
 }
 
-// Headers
-function cH(tok) {
-  const uid = (() => {
-    try {
-      if (!tok) return USER_COURSE;
-      const clean = tok.startsWith("Bearer ") ? tok.slice(7) : tok;
-      const payload = JSON.parse(Buffer.from(clean.split('.')[1], 'base64').toString());
-      return String(payload.user_id || USER_COURSE);
-    } catch(e) { return USER_COURSE; }
-  })();
-  
+function buildHeaders(token) {
+  const uid = getUserId(token);
   return {
     "accept": "application/json, text/plain, */*",
     "app_id": APP_ID,
-    "authorization": tok || FALLBACK,
+    "authorization": token || FALLBACK,
     "content-type": "application/json",
     "origin": "https://missionjeet.in",
     "referer": "https://missionjeet.in/",
     "platform": "3",
     "version": "1",
     "user_id": uid,
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
   };
 }
 
-function aH() {
+function buildAuthHeaders() {
   return {
     "Content-Type": "application/json",
     "app_id": APP_ID,
@@ -100,13 +128,20 @@ function aH() {
   };
 }
 
-// Main handler
+// ============================================================
+// MAIN HANDLER
+// ============================================================
 module.exports = async function handler(req, res) {
+  // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,X-User-Token,X-Refresh-Token,X-Session-Id");
-  if (req.method === "OPTIONS") return res.status(200).end();
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-User-Token, X-Refresh-Token, X-Session-Id");
+  
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
+  // Parse request body
   let body = req.body || {};
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch(e) { body = {}; }
@@ -119,147 +154,487 @@ module.exports = async function handler(req, res) {
   const sessionId = req.headers["x-session-id"] || null;
 
   try {
-
-    // ==================== AUTH ====================
-    
+    // ============================================================
+    // ACTION: sendotp - Send OTP to phone
+    // ============================================================
     if (action === "sendotp") {
       const { mobile } = body;
-      if (!mobile) return res.status(400).json({ success: false, error: "mobile required" });
-      const r = await fetch(`${AUTH}/auth/check-user`, {
+      if (!mobile) {
+        return res.status(400).json({ success: false, error: "mobile required" });
+      }
+      
+      const response = await fetch(`${AUTH}/auth/check-user`, {
         method: "POST",
-        headers: aH(),
-        body: JSON.stringify({ mobile: String(mobile), device_id: DEVICE_ID, mobile_otp_login: 1, otp: "" })
-      });
-      return res.status(200).json(await r.json());
-    }
-
-    if (action === "verifyotp") {
-      const { mobile, otp, name } = body;
-      if (!mobile || !otp) return res.status(400).json({ success: false, error: "mobile and otp required" });
-      const r = await fetch(`${AUTH}/auth/verify-otp`, {
-        method: "POST",
-        headers: aH(),
+        headers: buildAuthHeaders(),
         body: JSON.stringify({
-          mobile: String(mobile), otp: String(otp), signup_needed: "0",
-          device_id: DEVICE_ID, ...(name ? { name } : {})
+          mobile: String(mobile),
+          device_id: DEVICE_ID,
+          mobile_otp_login: 1,
+          otp: ""
         })
       });
-      const data = await r.json();
+      
+      const data = await response.json();
+      return res.status(200).json(data);
+    }
+
+    // ============================================================
+    // ACTION: verifyotp - Verify OTP and get tokens
+    // ============================================================
+    if (action === "verifyotp") {
+      const { mobile, otp, name } = body;
+      if (!mobile || !otp) {
+        return res.status(400).json({ success: false, error: "mobile and otp required" });
+      }
+      
+      const response = await fetch(`${AUTH}/auth/verify-otp`, {
+        method: "POST",
+        headers: buildAuthHeaders(),
+        body: JSON.stringify({
+          mobile: String(mobile),
+          otp: String(otp),
+          signup_needed: "0",
+          device_id: DEVICE_ID,
+          ...(name ? { name } : {})
+        })
+      });
+      
+      const data = await response.json();
       const accessToken = data.data?.accessToken || data.accessToken;
       const refreshToken = data.data?.refreshToken || data.refreshToken;
       
       if (accessToken && refreshToken) {
-        const newSessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-        tokenCache.set(newSessionId, { accessToken: `Bearer ${accessToken}`, refreshToken });
-        return res.status(200).json({ success: true, accessToken, refreshToken, sessionId: newSessionId });
+        const newSessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
+        
+        tokenCache.set(newSessionId, {
+          accessToken: `Bearer ${accessToken}`,
+          refreshToken: refreshToken,
+          expiry: getTokenExpiry(accessToken)
+        });
+        
+        return res.status(200).json({
+          success: true,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          sessionId: newSessionId,
+          expiresIn: getTokenExpiry(accessToken),
+          user: data.data?.user || data.user
+        });
       }
+      
       return res.status(200).json(data);
     }
 
+    // ============================================================
+    // ACTION: refresh - Refresh expired access token
+    // ============================================================
     if (action === "refresh") {
       const { refreshToken } = body;
       const tokenToRefresh = refreshToken || refreshTokenHeader;
+      
       if (!tokenToRefresh) {
-        return res.status(400).json({ success: false, error: "Refresh token required" });
+        return res.status(400).json({ 
+          success: false, 
+          error: "Refresh token required" 
+        });
       }
+      
       try {
         const refreshRes = await fetch(`${AUTH}/auth/refresh-token`, {
-          method: "POST", headers: aH(), body: JSON.stringify({ refreshToken: tokenToRefresh })
+          method: "POST",
+          headers: buildAuthHeaders(),
+          body: JSON.stringify({ refreshToken: tokenToRefresh })
         });
+        
         const refreshData = await refreshRes.json();
-        const newToken = refreshData.accessToken || refreshData.data?.accessToken;
-        if (newToken) {
+        const newAccessToken = refreshData.accessToken || refreshData.data?.accessToken;
+        
+        if (newAccessToken) {
           if (sessionId && tokenCache.has(sessionId)) {
             const cached = tokenCache.get(sessionId);
-            tokenCache.set(sessionId, { accessToken: `Bearer ${newToken}`, refreshToken: cached.refreshToken });
+            tokenCache.set(sessionId, {
+              accessToken: `Bearer ${newAccessToken}`,
+              refreshToken: cached.refreshToken,
+              expiry: getTokenExpiry(newAccessToken)
+            });
           }
-          return res.json({ success: true, accessToken: newToken });
+          
+          return res.status(200).json({
+            success: true,
+            accessToken: newAccessToken,
+            expiresIn: getTokenExpiry(newAccessToken)
+          });
+        } else {
+          return res.status(401).json({
+            success: false,
+            error: "Refresh token expired, please login again"
+          });
         }
-        return res.status(401).json({ success: false, error: "Refresh token expired" });
       } catch(err) {
-        return res.status(500).json({ success: false, error: err.message });
+        return res.status(500).json({
+          success: false,
+          error: "Refresh failed: " + err.message
+        });
       }
     }
 
-    // ==================== COURSE APIs ====================
-
+    // ============================================================
+    // ACTION: course - Get course details
+    // ============================================================
     if (action === "course") {
       const { course_id, parent_id } = req.query;
-      if (!course_id) return res.status(400).json({ error: "course_id required" });
+      if (!course_id) {
+        return res.status(400).json({ error: "course_id required" });
+      }
+      
       const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const r = await fetch(`${NT}/course/course-details`, {
-        method: "POST", headers: cH(validToken),
-        body: JSON.stringify({ course_id: String(course_id), parent_id: String(parent_id || "0") })
-      });
-      return res.status(200).json(await r.json());
-    }
-
-    if (action === "content") {
-      const { course_id, folder_id, parent_course_id } = req.query;
-      if (!course_id) return res.status(400).json({ error: "course_id required" });
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const r = await fetch(`${NT}/course/all-content`, {
-        method: "POST", headers: cH(validToken),
+      const response = await fetch(`${NT}/course/course-details`, {
+        method: "POST",
+        headers: buildHeaders(validToken),
         body: JSON.stringify({
-          course_id: String(course_id), folder_id: String(folder_id || "0"),
-          is_free: "", keyword: "", limit: "1000", page: "1", parent_course_id: String(parent_course_id || "0")
+          course_id: String(course_id),
+          parent_id: String(parent_id || "0")
         })
       });
-      return res.status(200).json(await r.json());
+      
+      const data = await response.json();
+      return res.status(200).json(data);
     }
 
+    // ============================================================
+    // ACTION: content - Get folder content with grouping
+    // ============================================================
+    if (action === "content") {
+      const { course_id, folder_id, parent_course_id } = req.query;
+      if (!course_id) {
+        return res.status(400).json({ error: "course_id required" });
+      }
+      
+      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      const response = await fetch(`${NT}/course/all-content`, {
+        method: "POST",
+        headers: buildHeaders(validToken),
+        body: JSON.stringify({
+          course_id: String(course_id),
+          folder_id: String(folder_id || "0"),
+          is_free: "",
+          keyword: "",
+          limit: "1000",
+          page: "1",
+          parent_course_id: String(parent_course_id || "0")
+        })
+      });
+      
+      const data = await response.json();
+      
+      // Group by title (video + PDF pairs)
+      if (data.success && data.data) {
+        const groupedMap = new Map();
+        for (const item of data.data) {
+          const title = item.title;
+          if (!groupedMap.has(title)) {
+            groupedMap.set(title, { title, video: null, pdf: null, items: [] });
+          }
+          const group = groupedMap.get(title);
+          group.items.push(item);
+          if (item.data?.file_type === 2) group.video = item;
+          if (item.data?.file_type === 1) group.pdf = item;
+        }
+        data.grouped = Array.from(groupedMap.values());
+      }
+      
+      return res.status(200).json(data);
+    }
+
+    // ============================================================
+    // ACTION: video - Get content details with player URLs
+    // ============================================================
     if (action === "video") {
       const { content_id, course_id } = req.query;
       if (!content_id || !course_id) {
         return res.status(400).json({ error: "content_id and course_id required" });
       }
+      
       const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const r = await fetch(
+      const response = await fetch(
         `${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`,
-        { method: "GET", headers: cH(validToken) }
+        { method: "GET", headers: buildHeaders(validToken) }
       );
-      return res.status(200).json(await r.json());
+      
+      const data = await response.json();
+      
+      // Add player URLs for frontend
+      if (data.success && data.data) {
+        const content = data.data;
+        
+        if (content.file_url && content.file_url.trim()) {
+          if (content.file_type === 1) {
+            // PDF
+            content.playerType = "pdf";
+            content.playerUrl = `/api/proxy?action=pdf&url=${encodeURIComponent(content.file_url)}`;
+          } else if (content.file_url.includes('.m3u8')) {
+            // HLS Stream
+            content.playerType = "hls";
+            content.playerUrl = `/api/proxy?action=player&url=${encodeURIComponent(content.file_url)}`;
+          } else if (content.file_url.includes('.mp4')) {
+            // MP4 Direct
+            content.playerType = "mp4";
+            content.playerUrl = content.file_url;
+          }
+        } else if (content.vdc_id) {
+          // VdoCipher DRM
+          content.playerType = "vdocipher";
+          content.playerUrl = `https://play.vdocipher.com/v2/${content.vdc_id}`;
+        }
+        
+        // Parse download URLs if present
+        if (content.download_urls && typeof content.download_urls === 'string') {
+          try {
+            content.downloadUrls = JSON.parse(content.download_urls);
+          } catch(e) {}
+        }
+      }
+      
+      return res.status(200).json(data);
     }
 
-    // ==================== TEST APIs ====================
+    // ============================================================
+    // ACTION: player - HLS Video Player Page
+    // ============================================================
+    if (action === "player") {
+      const { url } = req.query;
+      if (!url) {
+        return res.status(400).json({ error: "url parameter required" });
+      }
+      
+      const decodedUrl = decodeURIComponent(url);
+      res.setHeader('Content-Type', 'text/html');
+      
+      return res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <title>Mission JEET - Video Player</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; font-family: system-ui, sans-serif; }
+        .video-js { width: 100%; height: 100vh; }
+        .error-msg { color: #ff4444; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <video id="player" class="video-js vjs-default-skin vjs-big-play-centered" controls>
+        <p class="vjs-no-js">To view this video please enable JavaScript.</p>
+    </video>
+    <script>
+        const videoUrl = "${decodedUrl}";
+        const playerElement = document.getElementById('player');
+        const player = videojs(playerElement);
+        
+        if (Hls.isSupported()) {
+            const hls = new Hls({
+                debug: false,
+                enableWorker: true,
+                lowLatencyMode: true
+            });
+            hls.loadSource(videoUrl);
+            hls.attachMedia(playerElement);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                player.play();
+            });
+            hls.on(Hls.Events.ERROR, (event, data) => {
+                console.error('HLS Error:', data);
+                playerElement.parentElement.innerHTML = '<div class="error-msg">Failed to load video. Please try again later.</div>';
+            });
+        } else if (playerElement.canPlayType('application/vnd.apple.mpegurl')) {
+            playerElement.src = videoUrl;
+            playerElement.addEventListener('loadedmetadata', () => {
+                player.play();
+            });
+        } else {
+            playerElement.parentElement.innerHTML = '<div class="error-msg">HLS is not supported in this browser.</div>';
+        }
+    </script>
+</body>
+</html>`);
+    }
 
+    // ============================================================
+    // ACTION: pdf - PDF Viewer Page
+    // ============================================================
+    if (action === "pdf") {
+      const { url } = req.query;
+      if (!url) {
+        return res.status(400).json({ error: "url parameter required" });
+      }
+      
+      const decodedUrl = decodeURIComponent(url);
+      res.setHeader('Content-Type', 'text/html');
+      
+      return res.send(`<!DOCTYPE html>
+<html>
+<head>
+    <title>Mission JEET - PDF Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f5f5f5; font-family: system-ui, sans-serif; }
+        .pdf-container { width: 100%; height: 100vh; }
+        iframe { width: 100%; height: 100%; border: none; }
+    </style>
+</head>
+<body>
+    <div class="pdf-container">
+        <iframe src="${decodedUrl}" title="PDF Viewer"></iframe>
+    </div>
+</body>
+</html>`);
+    }
+
+    // ============================================================
+    // ACTION: live - Get live classes
+    // ============================================================
+    if (action === "live") {
+      const { course_id } = req.query;
+      if (!course_id) {
+        return res.status(400).json({ error: "course_id required" });
+      }
+      
+      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      const response = await fetch(`${NT}/course/all-content`, {
+        method: "POST",
+        headers: buildHeaders(validToken),
+        body: JSON.stringify({
+          course_id: String(course_id),
+          folder_id: "0",
+          is_free: "",
+          keyword: "",
+          limit: "100",
+          page: "1",
+          parent_course_id: "0"
+        })
+      });
+      
+      const data = await response.json();
+      
+      // Filter live content (is_live === 1)
+      if (data.success && data.data) {
+        const liveItems = data.data.filter(item => 
+          item.data?.is_live === 1 || 
+          (item.data?.file_type === 2 && item.data?.video_type === 3)
+        );
+        data.data = liveItems;
+      }
+      
+      return res.status(200).json(data);
+    }
+
+    // ============================================================
+    // ACTION: upcoming - Get upcoming classes
+    // ============================================================
+    if (action === "upcoming") {
+      const { course_id } = req.query;
+      if (!course_id) {
+        return res.status(400).json({ error: "course_id required" });
+      }
+      
+      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      const response = await fetch(`${NT}/course/all-content`, {
+        method: "POST",
+        headers: buildHeaders(validToken),
+        body: JSON.stringify({
+          course_id: String(course_id),
+          folder_id: "0",
+          is_free: "",
+          keyword: "",
+          limit: "100",
+          page: "1",
+          parent_course_id: "0"
+        })
+      });
+      
+      const data = await response.json();
+      
+      // Filter upcoming content
+      if (data.success && data.data) {
+        const now = Math.floor(Date.now() / 1000);
+        const upcomingItems = data.data.filter(item => 
+          item.data?.is_upcoming === 1 ||
+          (item.data?.start_time && Number(item.data.start_time) > now && item.data?.is_live !== 1)
+        );
+        data.data = upcomingItems;
+      }
+      
+      return res.status(200).json(data);
+    }
+
+    // ============================================================
+    // ACTION: testinfo - Get test instructions
+    // ============================================================
     if (action === "testinfo") {
       const { test_id } = req.query;
-      if (!test_id) return res.status(400).json({ error: "test_id required" });
+      if (!test_id) {
+        return res.status(400).json({ error: "test_id required" });
+      }
+      
       const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const r = await fetch(`${TEST}/test/get-test-instructions?test_id=${test_id}`, {
-        method: "GET", headers: {
-          "accept": "application/json, text/plain, */*", "app_id": APP_ID,
-          "authorization": validToken, "platform": "3", "version": "1",
-          "user_id": USER_TEST, "origin": "https://missionjeet.in"
-        }
-      });
-      return res.status(200).json(await r.json());
+      const response = await fetch(
+        `${TEST}/test/get-test-instructions?test_id=${test_id}`,
+        { method: "GET", headers: buildHeaders(validToken) }
+      );
+      
+      const data = await response.json();
+      return res.status(200).json(data);
     }
 
+    // ============================================================
+    // ACTION: testdata - Get test data (questions)
+    // ============================================================
     if (action === "testdata") {
       const { test_id } = req.query;
-      if (!test_id) return res.status(400).json({ error: "test_id required" });
+      if (!test_id) {
+        return res.status(400).json({ error: "test_id required" });
+      }
+      
       const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const r = await fetch(`${TEST}/test/get-test-data?test_id=${test_id}`, {
-        method: "GET", headers: {
-          "accept": "application/json, text/plain, */*", "app_id": APP_ID,
-          "authorization": validToken, "platform": "3", "version": "1",
-          "user_id": USER_TEST, "origin": "https://missionjeet.in"
-        }
-      });
-      return res.status(200).json(await r.json());
+      const response = await fetch(
+        `${TEST}/test/get-test-data?test_id=${test_id}`,
+        { method: "GET", headers: buildHeaders(validToken) }
+      );
+      
+      const data = await response.json();
+      return res.status(200).json(data);
     }
 
-    // ==================== DEFAULT ====================
-
+    // ============================================================
+    // Default: Invalid action
+    // ============================================================
     return res.status(400).json({
       success: false,
       error: "Invalid action",
-      available: ["mat kar lala 🖕🖕"]
+      available: [
+        "sendotp",
+        "verifyotp", 
+        "refresh",
+        "course",
+        "content",
+        "video",
+        "player",
+        "pdf",
+        "live",
+        "upcoming",
+        "testinfo",
+        "testdata"
+        "mat kar lala 🖕🖕"
+      ]
     });
 
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+  } catch (error) {
+    console.error("Proxy error:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || "Internal server error"
+    });
   }
 };
