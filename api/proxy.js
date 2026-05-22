@@ -1,7 +1,6 @@
 // ============================================================
-// COMPLETE PROXY SERVER - Mission JEET / Delta Study
-// Deploy on Vercel as serverless function
-// File: api/proxy.js
+// api/proxy.js - SIMPLE PROXY (No Live Detection)
+// Mission JEET - Pure Proxy Only
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -13,26 +12,28 @@ const USER_COURSE = "3186295";
 const USER_TEST   = "4071072";
 const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
 
-// Fallback token - valid until June 2026
 const FALLBACK = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3NzkzNzM5MTMsImV4cCI6MTc4MTk2NTkxM30.a9aCx3uzCS0W69KsiD_m4vwX11znneFvIn7JKSSPjQU";
 
-// Token cache for auto-refresh
-const tokenCache = new Map();
+// Simple rate limiting
+const requestCounts = new Map();
 
-// ============================================================
-// HELPER FUNCTIONS
-// ============================================================
-
-function getUserId(tok) {
-  try {
-    if (!tok) return USER_COURSE;
-    const cleanToken = tok.startsWith("Bearer ") ? tok.slice(7) : tok;
-    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
-    return String(payload.user_id || USER_COURSE);
-  } catch(e) { 
-    return USER_COURSE; 
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const userLimit = requestCounts.get(ip);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    requestCounts.set(ip, { count: 1, resetTime: now + 60000 });
+    return true;
   }
+  
+  if (userLimit.count >= 100) return false;
+  userLimit.count++;
+  return true;
 }
+
+// ============================================================
+// TOKEN FUNCTIONS
+// ============================================================
 
 function isTokenExpired(token) {
   if (!token) return true;
@@ -56,65 +57,53 @@ function getTokenExpiry(token) {
   }
 }
 
-async function getValidToken(userToken, refreshToken, sessionId) {
-  // If user provided their own token and it's valid, use it
-  if (userToken && !isTokenExpired(userToken)) {
-    return userToken.startsWith("Bearer ") ? userToken : `Bearer ${userToken}`;
+function getUserIdFromToken(token) {
+  try {
+    if (!token) return USER_COURSE;
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    return String(payload.user_id || USER_COURSE);
+  } catch(e) {
+    return USER_COURSE;
   }
-  
-  // Check cache for this session
-  if (sessionId && tokenCache.has(sessionId)) {
-    const cached = tokenCache.get(sessionId);
-    if (!isTokenExpired(cached.accessToken)) {
-      return cached.accessToken;
-    }
-  }
-  
-  // Try to refresh using refreshToken
-  if (refreshToken) {
-    try {
-      const refreshRes = await fetch(`${AUTH}/auth/refresh-token`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken: refreshToken })
-      });
-      
-      const refreshData = await refreshRes.json();
-      const newAccessToken = refreshData.accessToken || refreshData.data?.accessToken;
-      
-      if (newAccessToken) {
-        const bearerToken = `Bearer ${newAccessToken}`;
-        if (sessionId) {
-          tokenCache.set(sessionId, {
-            accessToken: bearerToken,
-            refreshToken: refreshToken,
-            expiry: getTokenExpiry(newAccessToken)
-          });
-        }
-        return bearerToken;
-      }
-    } catch(e) {
-      console.error("Auto-refresh failed:", e.message);
-    }
-  }
-  
-  // Fallback
-  return FALLBACK;
 }
 
-function buildHeaders(token) {
-  const uid = getUserId(token);
+async function refreshAccessToken(refreshToken) {
+  try {
+    const response = await fetch(`${AUTH}/auth/refresh-token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken: refreshToken })
+    });
+    
+    const data = await response.json();
+    const newAccessToken = data.accessToken || data.data?.accessToken;
+    
+    if (newAccessToken) {
+      return {
+        success: true,
+        accessToken: newAccessToken,
+        expiresIn: getTokenExpiry(newAccessToken)
+      };
+    }
+    return { success: false, error: "Refresh failed" };
+  } catch(e) {
+    return { success: false, error: e.message };
+  }
+}
+
+function buildHeaders(accessToken, userId) {
   return {
     "accept": "application/json, text/plain, */*",
     "app_id": APP_ID,
-    "authorization": token || FALLBACK,
+    "authorization": accessToken.startsWith("Bearer ") ? accessToken : `Bearer ${accessToken}`,
     "content-type": "application/json",
     "origin": "https://missionjeet.in",
     "referer": "https://missionjeet.in/",
     "platform": "3",
     "version": "1",
-    "user_id": uid,
-    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
+    "user_id": userId,
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
   };
 }
 
@@ -129,16 +118,78 @@ function buildAuthHeaders() {
 }
 
 // ============================================================
+// PDF VIEWER ONLY
+// ============================================================
+
+function getPDFViewerHTML(pdfUrl) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mission JEET - PDF Viewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #f0f0f0; height: 100vh; overflow: hidden; font-family: system-ui, sans-serif; }
+        iframe { width: 100%; height: 100%; border: none; }
+        .download-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a1a2e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: system-ui;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            font-weight: 500;
+        }
+        .download-btn:hover { background: #2d2d44; }
+        .back-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: #1a1a2e;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-family: system-ui;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .back-btn:hover { background: #2d2d44; }
+    </style>
+</head>
+<body>
+    <iframe src="${pdfUrl}" title="PDF Viewer"></iframe>
+    <a href="${pdfUrl}" class="download-btn" download>📥 Download PDF</a>
+    <a href="javascript:history.back()" class="back-btn">← Back</a>
+</body>
+</html>`;
+}
+
+// ============================================================
 // MAIN HANDLER
 // ============================================================
+
 module.exports = async function handler(req, res) {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-User-Token, X-Refresh-Token, X-Session-Id");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token");
   
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method === "OPTIONS") return res.status(200).end();
+  
+  // Rate limiting
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  if (!checkRateLimit(clientIp)) {
+    return res.status(429).json({ 
+      success: false, 
+      error: "Too many requests. Please wait a minute." 
+    });
   }
 
   // Parse request body
@@ -149,13 +200,12 @@ module.exports = async function handler(req, res) {
   body = Object.assign({}, req.query, body);
 
   const { action } = req.query;
-  const userToken = req.headers["x-user-token"] || null;
+  const userToken = req.headers["authorization"] || null;
   const refreshTokenHeader = req.headers["x-refresh-token"] || null;
-  const sessionId = req.headers["x-session-id"] || null;
 
   try {
     // ============================================================
-    // ACTION: sendotp - Send OTP to phone
+    // ACTION: sendotp
     // ============================================================
     if (action === "sendotp") {
       const { mobile } = body;
@@ -179,7 +229,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: verifyotp - Verify OTP and get tokens
+    // ACTION: verifyotp
     // ============================================================
     if (action === "verifyotp") {
       const { mobile, otp, name } = body;
@@ -202,23 +252,15 @@ module.exports = async function handler(req, res) {
       const data = await response.json();
       const accessToken = data.data?.accessToken || data.accessToken;
       const refreshToken = data.data?.refreshToken || data.refreshToken;
+      const userId = data.data?.user_id || getUserIdFromToken(accessToken);
       
       if (accessToken && refreshToken) {
-        const newSessionId = Date.now().toString(36) + Math.random().toString(36).substr(2, 8);
-        
-        tokenCache.set(newSessionId, {
-          accessToken: `Bearer ${accessToken}`,
-          refreshToken: refreshToken,
-          expiry: getTokenExpiry(accessToken)
-        });
-        
         return res.status(200).json({
           success: true,
+          userId: userId,
           accessToken: accessToken,
           refreshToken: refreshToken,
-          sessionId: newSessionId,
-          expiresIn: getTokenExpiry(accessToken),
-          user: data.data?.user || data.user
+          expiresIn: getTokenExpiry(accessToken)
         });
       }
       
@@ -226,7 +268,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: refresh - Refresh expired access token
+    // ACTION: refresh
     // ============================================================
     if (action === "refresh") {
       const { refreshToken } = body;
@@ -239,47 +281,12 @@ module.exports = async function handler(req, res) {
         });
       }
       
-      try {
-        const refreshRes = await fetch(`${AUTH}/auth/refresh-token`, {
-          method: "POST",
-          headers: buildAuthHeaders(),
-          body: JSON.stringify({ refreshToken: tokenToRefresh })
-        });
-        
-        const refreshData = await refreshRes.json();
-        const newAccessToken = refreshData.accessToken || refreshData.data?.accessToken;
-        
-        if (newAccessToken) {
-          if (sessionId && tokenCache.has(sessionId)) {
-            const cached = tokenCache.get(sessionId);
-            tokenCache.set(sessionId, {
-              accessToken: `Bearer ${newAccessToken}`,
-              refreshToken: cached.refreshToken,
-              expiry: getTokenExpiry(newAccessToken)
-            });
-          }
-          
-          return res.status(200).json({
-            success: true,
-            accessToken: newAccessToken,
-            expiresIn: getTokenExpiry(newAccessToken)
-          });
-        } else {
-          return res.status(401).json({
-            success: false,
-            error: "Refresh token expired, please login again"
-          });
-        }
-      } catch(err) {
-        return res.status(500).json({
-          success: false,
-          error: "Refresh failed: " + err.message
-        });
-      }
+      const result = await refreshAccessToken(tokenToRefresh);
+      return res.status(result.success ? 200 : 401).json(result);
     }
 
     // ============================================================
-    // ACTION: course - Get course details
+    // ACTION: course
     // ============================================================
     if (action === "course") {
       const { course_id, parent_id } = req.query;
@@ -287,10 +294,22 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "course_id required" });
       }
       
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      let accessToken = userToken;
+      let userId = getUserIdFromToken(accessToken);
+      
+      if (accessToken && isTokenExpired(accessToken)) {
+        if (refreshTokenHeader) {
+          const refreshResult = await refreshAccessToken(refreshTokenHeader);
+          if (refreshResult.success) {
+            accessToken = `Bearer ${refreshResult.accessToken}`;
+          }
+        }
+      }
+      
+      const finalToken = accessToken || FALLBACK;
       const response = await fetch(`${NT}/course/course-details`, {
         method: "POST",
-        headers: buildHeaders(validToken),
+        headers: buildHeaders(finalToken, userId),
         body: JSON.stringify({
           course_id: String(course_id),
           parent_id: String(parent_id || "0")
@@ -302,7 +321,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: content - Get folder content with grouping
+    // ACTION: content - Returns RAW data, frontend will filter
     // ============================================================
     if (action === "content") {
       const { course_id, folder_id, parent_course_id } = req.query;
@@ -310,10 +329,22 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "course_id required" });
       }
       
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      let accessToken = userToken;
+      let userId = getUserIdFromToken(accessToken);
+      
+      if (accessToken && isTokenExpired(accessToken)) {
+        if (refreshTokenHeader) {
+          const refreshResult = await refreshAccessToken(refreshTokenHeader);
+          if (refreshResult.success) {
+            accessToken = `Bearer ${refreshResult.accessToken}`;
+          }
+        }
+      }
+      
+      const finalToken = accessToken || FALLBACK;
       const response = await fetch(`${NT}/course/all-content`, {
         method: "POST",
-        headers: buildHeaders(validToken),
+        headers: buildHeaders(finalToken, userId),
         body: JSON.stringify({
           course_id: String(course_id),
           folder_id: String(folder_id || "0"),
@@ -327,18 +358,18 @@ module.exports = async function handler(req, res) {
       
       const data = await response.json();
       
-      // Group by title (video + PDF pairs)
-      if (data.success && data.data) {
+      // Only grouping, NO live/upcoming filtering
+      if (data.success && data.data && Array.isArray(data.data)) {
         const groupedMap = new Map();
         for (const item of data.data) {
           const title = item.title;
           if (!groupedMap.has(title)) {
-            groupedMap.set(title, { title, video: null, pdf: null, items: [] });
+            groupedMap.set(title, { title, video: null, pdf: null, other: [] });
           }
           const group = groupedMap.get(title);
-          group.items.push(item);
           if (item.data?.file_type === 2) group.video = item;
-          if (item.data?.file_type === 1) group.pdf = item;
+          else if (item.data?.file_type === 1) group.pdf = item;
+          else group.other.push(item);
         }
         data.grouped = Array.from(groupedMap.values());
       }
@@ -347,7 +378,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: video - Get content details with player URLs
+    // ACTION: video - Get direct video URL
     // ============================================================
     if (action === "video") {
       const { content_id, course_id } = req.query;
@@ -355,42 +386,42 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "content_id and course_id required" });
       }
       
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
+      let accessToken = userToken;
+      let userId = getUserIdFromToken(accessToken);
+      
+      if (accessToken && isTokenExpired(accessToken)) {
+        if (refreshTokenHeader) {
+          const refreshResult = await refreshAccessToken(refreshTokenHeader);
+          if (refreshResult.success) {
+            accessToken = `Bearer ${refreshResult.accessToken}`;
+          }
+        }
+      }
+      
+      const finalToken = accessToken || FALLBACK;
       const response = await fetch(
         `${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`,
-        { method: "GET", headers: buildHeaders(validToken) }
+        { method: "GET", headers: buildHeaders(finalToken, userId) }
       );
       
       const data = await response.json();
       
-      // Add player URLs for frontend
+      // Add direct URLs
       if (data.success && data.data) {
         const content = data.data;
         
-        if (content.file_url && content.file_url.trim()) {
+        if (content.file_url) {
+          content.directUrl = content.file_url;
+          content.playerType = content.file_type === 1 ? "pdf" : "video";
+          
           if (content.file_type === 1) {
-            // PDF
-            content.playerType = "pdf";
-            content.playerUrl = `/api/proxy?action=pdf&url=${encodeURIComponent(content.file_url)}`;
-          } else if (content.file_url.includes('.m3u8')) {
-            // HLS Stream
-            content.playerType = "hls";
-            content.playerUrl = `/api/proxy?action=player&url=${encodeURIComponent(content.file_url)}`;
-          } else if (content.file_url.includes('.mp4')) {
-            // MP4 Direct
-            content.playerType = "mp4";
-            content.playerUrl = content.file_url;
+            content.viewerUrl = `/api/proxy?action=pdf&url=${encodeURIComponent(content.file_url)}`;
           }
-        } else if (content.vdc_id) {
-          // VdoCipher DRM
-          content.playerType = "vdocipher";
-          content.playerUrl = `https://play.vdocipher.com/v2/${content.vdc_id}`;
         }
         
-        // Parse download URLs if present
         if (content.download_urls && typeof content.download_urls === 'string') {
           try {
-            content.downloadUrls = JSON.parse(content.download_urls);
+            content.parsedDownloadUrls = JSON.parse(content.download_urls);
           } catch(e) {}
         }
       }
@@ -399,70 +430,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: player - HLS Video Player Page
-    // ============================================================
-    if (action === "player") {
-      const { url } = req.query;
-      if (!url) {
-        return res.status(400).json({ error: "url parameter required" });
-      }
-      
-      const decodedUrl = decodeURIComponent(url);
-      res.setHeader('Content-Type', 'text/html');
-      
-      return res.send(`<!DOCTYPE html>
-<html>
-<head>
-    <title>Mission JEET - Video Player</title>
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; font-family: system-ui, sans-serif; }
-        .video-js { width: 100%; height: 100vh; }
-        .error-msg { color: #ff4444; text-align: center; padding: 20px; }
-    </style>
-</head>
-<body>
-    <video id="player" class="video-js vjs-default-skin vjs-big-play-centered" controls>
-        <p class="vjs-no-js">To view this video please enable JavaScript.</p>
-    </video>
-    <script>
-        const videoUrl = "${decodedUrl}";
-        const playerElement = document.getElementById('player');
-        const player = videojs(playerElement);
-        
-        if (Hls.isSupported()) {
-            const hls = new Hls({
-                debug: false,
-                enableWorker: true,
-                lowLatencyMode: true
-            });
-            hls.loadSource(videoUrl);
-            hls.attachMedia(playerElement);
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                player.play();
-            });
-            hls.on(Hls.Events.ERROR, (event, data) => {
-                console.error('HLS Error:', data);
-                playerElement.parentElement.innerHTML = '<div class="error-msg">Failed to load video. Please try again later.</div>';
-            });
-        } else if (playerElement.canPlayType('application/vnd.apple.mpegurl')) {
-            playerElement.src = videoUrl;
-            playerElement.addEventListener('loadedmetadata', () => {
-                player.play();
-            });
-        } else {
-            playerElement.parentElement.innerHTML = '<div class="error-msg">HLS is not supported in this browser.</div>';
-        }
-    </script>
-</body>
-</html>`);
-    }
-
-    // ============================================================
-    // ACTION: pdf - PDF Viewer Page
+    // ACTION: pdf
     // ============================================================
     if (action === "pdf") {
       const { url } = req.query;
@@ -472,105 +440,11 @@ module.exports = async function handler(req, res) {
       
       const decodedUrl = decodeURIComponent(url);
       res.setHeader('Content-Type', 'text/html');
-      
-      return res.send(`<!DOCTYPE html>
-<html>
-<head>
-    <title>Mission JEET - PDF Viewer</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #f5f5f5; font-family: system-ui, sans-serif; }
-        .pdf-container { width: 100%; height: 100vh; }
-        iframe { width: 100%; height: 100%; border: none; }
-    </style>
-</head>
-<body>
-    <div class="pdf-container">
-        <iframe src="${decodedUrl}" title="PDF Viewer"></iframe>
-    </div>
-</body>
-</html>`);
+      return res.status(200).send(getPDFViewerHTML(decodedUrl));
     }
 
     // ============================================================
-    // ACTION: live - Get live classes
-    // ============================================================
-    if (action === "live") {
-      const { course_id } = req.query;
-      if (!course_id) {
-        return res.status(400).json({ error: "course_id required" });
-      }
-      
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const response = await fetch(`${NT}/course/all-content`, {
-        method: "POST",
-        headers: buildHeaders(validToken),
-        body: JSON.stringify({
-          course_id: String(course_id),
-          folder_id: "0",
-          is_free: "",
-          keyword: "",
-          limit: "100",
-          page: "1",
-          parent_course_id: "0"
-        })
-      });
-      
-      const data = await response.json();
-      
-      // Filter live content (is_live === 1)
-      if (data.success && data.data) {
-        const liveItems = data.data.filter(item => 
-          item.data?.is_live === 1 || 
-          (item.data?.file_type === 2 && item.data?.video_type === 3)
-        );
-        data.data = liveItems;
-      }
-      
-      return res.status(200).json(data);
-    }
-
-    // ============================================================
-    // ACTION: upcoming - Get upcoming classes
-    // ============================================================
-    if (action === "upcoming") {
-      const { course_id } = req.query;
-      if (!course_id) {
-        return res.status(400).json({ error: "course_id required" });
-      }
-      
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
-      const response = await fetch(`${NT}/course/all-content`, {
-        method: "POST",
-        headers: buildHeaders(validToken),
-        body: JSON.stringify({
-          course_id: String(course_id),
-          folder_id: "0",
-          is_free: "",
-          keyword: "",
-          limit: "100",
-          page: "1",
-          parent_course_id: "0"
-        })
-      });
-      
-      const data = await response.json();
-      
-      // Filter upcoming content
-      if (data.success && data.data) {
-        const now = Math.floor(Date.now() / 1000);
-        const upcomingItems = data.data.filter(item => 
-          item.data?.is_upcoming === 1 ||
-          (item.data?.start_time && Number(item.data.start_time) > now && item.data?.is_live !== 1)
-        );
-        data.data = upcomingItems;
-      }
-      
-      return res.status(200).json(data);
-    }
-
-    // ============================================================
-    // ACTION: testinfo - Get test instructions
+    // ACTION: testinfo
     // ============================================================
     if (action === "testinfo") {
       const { test_id } = req.query;
@@ -578,10 +452,9 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "test_id required" });
       }
       
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
       const response = await fetch(
         `${TEST}/test/get-test-instructions?test_id=${test_id}`,
-        { method: "GET", headers: buildHeaders(validToken) }
+        { method: "GET", headers: buildHeaders(FALLBACK, USER_TEST) }
       );
       
       const data = await response.json();
@@ -589,7 +462,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: testdata - Get test data (questions)
+    // ACTION: testdata
     // ============================================================
     if (action === "testdata") {
       const { test_id } = req.query;
@@ -597,10 +470,9 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "test_id required" });
       }
       
-      const validToken = await getValidToken(userToken, refreshTokenHeader, sessionId);
       const response = await fetch(
         `${TEST}/test/get-test-data?test_id=${test_id}`,
-        { method: "GET", headers: buildHeaders(validToken) }
+        { method: "GET", headers: buildHeaders(FALLBACK, USER_TEST) }
       );
       
       const data = await response.json();
@@ -608,33 +480,36 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // Default: Invalid action
+    // ACTION: stats
+    // ============================================================
+    if (action === "stats") {
+      return res.status(200).json({
+        success: true,
+        status: "healthy",
+        activeRateLimitEntries: requestCounts.size,
+        timestamp: Date.now(),
+        note: "Proxy only - Live/Upcoming detection moved to frontend"
+      });
+    }
+
+    // ============================================================
+    // Default
     // ============================================================
     return res.status(400).json({
       success: false,
       error: "Invalid action",
       available: [
-        "sendotp",
-        "verifyotp", 
-        "refresh",
-        "course",
-        "content",
-        "video",
-        "player",
-        "pdf",
-        "live",
-        "upcoming",
-        "testinfo",
-        "testdata"
-        "mat kar lala 🖕🖕"
+        "sendotp", "verifyotp", "refresh",
+        "course", "content", "video", 
+        "pdf", "testinfo", "testdata", "stats"
       ]
     });
 
   } catch (error) {
-    console.error("Proxy error:", error);
-    return res.status(500).json({
-      success: false,
-      error: error.message || "Internal server error"
+    console.error("Proxy Error:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: error.message || "Internal server error" 
     });
   }
 };
