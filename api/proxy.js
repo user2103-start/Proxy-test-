@@ -1,6 +1,9 @@
 // ============================================================
-// api/proxy.js - SIMPLE PROXY (No Live Detection)
-// Mission JEET - Pure Proxy Only
+// api/proxy.js - UPDATED PROXY
+// Changes:
+// 1. PDF URL fix - no more playerUrl conversion
+// 2. New /getuser API added
+// 3. Grouping removed from content response
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -65,6 +68,17 @@ function getUserIdFromToken(token) {
     return String(payload.user_id || USER_COURSE);
   } catch(e) {
     return USER_COURSE;
+  }
+}
+
+function getUserNameFromToken(token) {
+  try {
+    if (!token) return null;
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    return payload.name || null;
+  } catch(e) {
+    return null;
   }
 }
 
@@ -179,7 +193,7 @@ module.exports = async function handler(req, res) {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token, X-User-Id, X-Device-Id");
   
   if (req.method === "OPTIONS") return res.status(200).end();
   
@@ -202,6 +216,7 @@ module.exports = async function handler(req, res) {
   const { action } = req.query;
   const userToken = req.headers["authorization"] || null;
   const refreshTokenHeader = req.headers["x-refresh-token"] || null;
+  const deviceId = req.headers["x-device-id"] || DEVICE_ID;
 
   try {
     // ============================================================
@@ -218,7 +233,7 @@ module.exports = async function handler(req, res) {
         headers: buildAuthHeaders(),
         body: JSON.stringify({
           mobile: String(mobile),
-          device_id: DEVICE_ID,
+          device_id: deviceId,
           mobile_otp_login: 1,
           otp: ""
         })
@@ -244,7 +259,7 @@ module.exports = async function handler(req, res) {
           mobile: String(mobile),
           otp: String(otp),
           signup_needed: "0",
-          device_id: DEVICE_ID,
+          device_id: deviceId,
           ...(name ? { name } : {})
         })
       });
@@ -253,11 +268,13 @@ module.exports = async function handler(req, res) {
       const accessToken = data.data?.accessToken || data.accessToken;
       const refreshToken = data.data?.refreshToken || data.refreshToken;
       const userId = data.data?.user_id || getUserIdFromToken(accessToken);
+      const userName = data.data?.name || name || null;
       
       if (accessToken && refreshToken) {
         return res.status(200).json({
           success: true,
           userId: userId,
+          userName: userName,
           accessToken: accessToken,
           refreshToken: refreshToken,
           expiresIn: getTokenExpiry(accessToken)
@@ -265,6 +282,43 @@ module.exports = async function handler(req, res) {
       }
       
       return res.status(200).json(data);
+    }
+
+    // ============================================================
+    // ACTION: getuser - NEW API to fetch user details
+    // ============================================================
+    if (action === "getuser") {
+      const { mobile } = body;
+      if (!mobile) {
+        return res.status(400).json({ success: false, error: "mobile required" });
+      }
+      
+      const response = await fetch(`${AUTH}/auth/check-user`, {
+        method: "POST",
+        headers: buildAuthHeaders(),
+        body: JSON.stringify({
+          mobile: String(mobile),
+          device_id: deviceId,
+          mobile_otp_login: 1,
+          otp: ""
+        })
+      });
+      
+      const data = await response.json();
+      
+      // Extract user name from response
+      const userName = data.data?.name || null;
+      const userExists = data.data?.exists || false;
+      const userMobile = mobile;
+      
+      return res.status(200).json({
+        success: true,
+        user: {
+          mobile: userMobile,
+          name: userName,
+          exists: userExists
+        }
+      });
     }
 
     // ============================================================
@@ -321,7 +375,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ACTION: content - Returns RAW data, frontend will filter
+    // ACTION: content - Returns RAW data (NO grouping)
     // ============================================================
     if (action === "content") {
       const { course_id, folder_id, parent_course_id } = req.query;
@@ -358,27 +412,14 @@ module.exports = async function handler(req, res) {
       
       const data = await response.json();
       
-      // Only grouping, NO live/upcoming filtering
-      if (data.success && data.data && Array.isArray(data.data)) {
-        const groupedMap = new Map();
-        for (const item of data.data) {
-          const title = item.title;
-          if (!groupedMap.has(title)) {
-            groupedMap.set(title, { title, video: null, pdf: null, other: [] });
-          }
-          const group = groupedMap.get(title);
-          if (item.data?.file_type === 2) group.video = item;
-          else if (item.data?.file_type === 1) group.pdf = item;
-          else group.other.push(item);
-        }
-        data.grouped = Array.from(groupedMap.values());
-      }
+      // NO GROUPING - return raw data as is
+      // Frontend will handle grouping, live/upcoming detection
       
       return res.status(200).json(data);
     }
 
     // ============================================================
-    // ACTION: video - Get direct video URL
+    // ACTION: video - Get direct video URL (FIXED for PDF)
     // ============================================================
     if (action === "video") {
       const { content_id, course_id } = req.query;
@@ -406,16 +447,25 @@ module.exports = async function handler(req, res) {
       
       const data = await response.json();
       
-      // Add direct URLs
+      // Add direct URLs - FIX: PDF ko playerUrl nahi dega
       if (data.success && data.data) {
         const content = data.data;
         
         if (content.file_url) {
           content.directUrl = content.file_url;
-          content.playerType = content.file_type === 1 ? "pdf" : "video";
           
+          // PDF vs Video handling
           if (content.file_type === 1) {
+            // PDF - only viewerUrl, NO playerUrl
+            content.playerType = "pdf";
             content.viewerUrl = `/api/proxy?action=pdf&url=${encodeURIComponent(content.file_url)}`;
+            // Ensure no playerUrl is set for PDFs
+            delete content.playerUrl;
+          } else {
+            // Video - playerUrl for HLS
+            content.playerType = "video";
+            // Only add playerUrl for videos (not PDFs)
+            content.playerUrl = `/api/proxy?action=player&url=${encodeURIComponent(content.file_url)}`;
           }
         }
         
@@ -452,9 +502,12 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "test_id required" });
       }
       
+      let accessToken = userToken || FALLBACK;
+      let userId = getUserIdFromToken(accessToken);
+      
       const response = await fetch(
         `${TEST}/test/get-test-instructions?test_id=${test_id}`,
-        { method: "GET", headers: buildHeaders(FALLBACK, USER_TEST) }
+        { method: "GET", headers: buildHeaders(accessToken, userId) }
       );
       
       const data = await response.json();
@@ -470,9 +523,12 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: "test_id required" });
       }
       
+      let accessToken = userToken || FALLBACK;
+      let userId = getUserIdFromToken(accessToken);
+      
       const response = await fetch(
         `${TEST}/test/get-test-data?test_id=${test_id}`,
-        { method: "GET", headers: buildHeaders(FALLBACK, USER_TEST) }
+        { method: "GET", headers: buildHeaders(accessToken, userId) }
       );
       
       const data = await response.json();
@@ -488,7 +544,7 @@ module.exports = async function handler(req, res) {
         status: "healthy",
         activeRateLimitEntries: requestCounts.size,
         timestamp: Date.now(),
-        note: "Proxy only - Live/Upcoming detection moved to frontend"
+        note: "Proxy updated - No grouping, PDF fix, getuser API added"
       });
     }
 
@@ -499,7 +555,7 @@ module.exports = async function handler(req, res) {
       success: false,
       error: "Invalid action",
       available: [
-        "sendotp", "verifyotp", "refresh",
+        "sendotp", "verifyotp", "getuser", "refresh",
         "course", "content", "video", 
         "pdf", "testinfo", "testdata", "stats"
       ]
