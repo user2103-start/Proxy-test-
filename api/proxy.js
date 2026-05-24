@@ -1,9 +1,10 @@
 // ============================================================
 // api/proxy.js - UPDATED PROXY
 // Changes:
-// 1. PDF URL fix - no more playerUrl conversion
+// 1. PDF URL fix - no more playerUrl conversion for PDFs
 // 2. New /getuser API added
 // 3. Grouping removed from content response
+// 4. New /submit-test API added
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -68,17 +69,6 @@ function getUserIdFromToken(token) {
     return String(payload.user_id || USER_COURSE);
   } catch(e) {
     return USER_COURSE;
-  }
-}
-
-function getUserNameFromToken(token) {
-  try {
-    if (!token) return null;
-    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
-    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
-    return payload.name || null;
-  } catch(e) {
-    return null;
   }
 }
 
@@ -306,7 +296,6 @@ module.exports = async function handler(req, res) {
       
       const data = await response.json();
       
-      // Extract user name from response
       const userName = data.data?.name || null;
       const userExists = data.data?.exists || false;
       const userMobile = mobile;
@@ -536,6 +525,39 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
+    // ACTION: submit-test - NEW API
+    // ============================================================
+    if (action === "submit-test") {
+      const { test_id, course_id, user_id, answers, total_time_spent, submission_time } = body;
+      
+      if (!test_id) {
+        return res.status(400).json({ success: false, error: "test_id required" });
+      }
+      
+      let accessToken = userToken || FALLBACK;
+      let userId = getUserIdFromToken(accessToken);
+      const finalUserId = user_id || userId;
+      
+      const requestBody = {
+        test_id: String(test_id),
+        course_id: String(course_id || ""),
+        user_id: String(finalUserId),
+        answers: answers || [],
+        total_time_spent: total_time_spent || 0,
+        submission_time: submission_time || new Date().toISOString()
+      };
+      
+      const response = await fetch(`${TEST}/test/submit-test`, {
+        method: "POST",
+        headers: buildHeaders(accessToken, finalUserId),
+        body: JSON.stringify(requestBody)
+      });
+      
+      const data = await response.json();
+      return res.status(response.status).json(data);
+    }
+
+    // ============================================================
     // ACTION: stats
     // ============================================================
     if (action === "stats") {
@@ -544,7 +566,7 @@ module.exports = async function handler(req, res) {
         status: "healthy",
         activeRateLimitEntries: requestCounts.size,
         timestamp: Date.now(),
-        note: "Proxy updated - No grouping, PDF fix, getuser API added"
+        note: "Proxy updated - Grouping removed, PDF fix, getuser API, submit-test API added"
       });
     }
 
@@ -557,7 +579,7 @@ module.exports = async function handler(req, res) {
       available: [
         "sendotp", "verifyotp", "getuser", "refresh",
         "course", "content", "video", 
-        "pdf", "testinfo", "testdata", "stats"
+        "pdf", "testinfo", "testdata", "submit-test", "stats"
       ]
     });
 
