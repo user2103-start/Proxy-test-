@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>NextToppers Live</title>
+
+<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+background:#081120;
+font-family:Arial,sans-serif;
+color:white;
+overflow:hidden;
+}
+
+.container{
+display:flex;
+height:100vh;
+}
+
+/* LEFT */
+
+.left{
+flex:1;
+display:flex;
+flex-direction:column;
+background:#0b1430;
+}
+
+.player-wrap{
+position:relative;
+width:100%;
+background:black;
+}
+
+video{
+width:100%;
+height:42vh;
+background:black;
+}
+
+.top-overlay{
+position:absolute;
+top:15px;
+left:15px;
+display:flex;
+gap:10px;
+z-index:20;
+}
+
+.chip{
+background:rgba(0,0,0,.65);
+padding:8px 14px;
+border-radius:999px;
+font-size:13px;
+font-weight:bold;
+backdrop-filter:blur(10px);
+}
+
+.live-chip{
+background:red;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{opacity:1}
+50%{opacity:.5}
+100%{opacity:1}
+}
+
+.info{
+padding:24px;
+}
+
+.title{
+font-size:32px;
+font-weight:700;
+margin-bottom:18px;
+line-height:1.3;
+}
+
+.meta{
+display:flex;
+gap:14px;
+flex-wrap:wrap;
+margin-bottom:20px;
+}
+
+.meta-box{
+background:#17223f;
+padding:12px 18px;
+border-radius:18px;
+font-size:15px;
+}
+
+.live-now{
+font-size:22px;
+font-weight:bold;
+color:#38bdf8;
+}
+
+/* RIGHT */
+
+.right{
+width:390px;
+background:#101827;
+display:flex;
+flex-direction:column;
+border-left:1px solid rgba(255,255,255,.08);
+position:relative;
+}
+
+.chat-top{
+height:75px;
+padding:18px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.chat-title{
+font-size:18px;
+font-weight:bold;
+}
+
+.chat-sub{
+font-size:13px;
+color:#38bdf8;
+margin-top:4px;
+}
+
+#chat{
+flex:1;
+overflow-y:auto;
+overflow-x:hidden;
+padding:14px;
+scroll-behavior:smooth;
+}
+
+.msg{
+margin-bottom:14px;
+}
+
+.msg-box{
+background:#1b2742;
+padding:12px;
+border-radius:18px;
+}
+
+.msg-name{
+font-size:14px;
+font-weight:bold;
+color:#38bdf8;
+margin-bottom:6px;
+}
+
+.msg-text{
+font-size:15px;
+line-height:1.5;
+word-break:break-word;
+}
+
+.msg-time{
+margin-top:7px;
+font-size:11px;
+opacity:.65;
+}
+
+.system-msg{
+background:#172036;
+padding:12px;
+border-radius:14px;
+font-size:13px;
+line-height:1.5;
+color:#94a3b8;
+margin-bottom:12px;
+}
+
+.input-wrap{
+padding:14px;
+display:flex;
+gap:10px;
+background:#0f172a;
+border-top:1px solid rgba(255,255,255,.08);
+}
+
+.input-wrap input{
+flex:1;
+border:none;
+outline:none;
+background:#1b2742;
+padding:15px;
+border-radius:18px;
+color:white;
+font-size:15px;
+}
+
+.input-wrap button{
+width:70px;
+border:none;
+border-radius:18px;
+background:#2563eb;
+color:white;
+font-size:18px;
+cursor:pointer;
+}
+
+#logs{
+height:110px;
+overflow:auto;
+background:black;
+color:#00ff90;
+font-size:11px;
+padding:10px;
+}
+
+@media(max-width:900px){
+
+body{
+overflow:auto;
+}
+
+.container{
+flex-direction:column;
+height:auto;
+}
+
+.right{
+width:100%;
+height:55vh;
+}
+
+video{
+height:260px;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<!-- LEFT -->
+
+<div class="left">
+
+<div class="player-wrap">
+
+<video
+id="video"
+controls
+autoplay
+playsinline
+webkit-playsinline
+muted
+></video>
+
+<div class="top-overlay">
+
+<div class="chip live-chip">
+LIVE
+</div>
+
+<div class="chip" id="mqttState">
+MQTT Protected
+</div>
+
+</div>
+
+</div>
+
+<div class="info">
+
+<div class="title" id="title">
+Loading...
+</div>
+
+<div class="meta">
+
+<div class="meta-box" id="courseBox">
+Course: --
+</div>
+
+<div class="meta-box">
+Player Endpoint Enabled
+</div>
+
+<div class="meta-box">
+JWT Loaded
+</div>
+
+</div>
+
+<div class="live-now">
+🔴 LIVE CLASS RUNNING
+</div>
+
+</div>
+
+</div>
+
+<!-- RIGHT -->
+
+<div class="right">
+
+<div class="chat-top">
+
+<div>
+
+<div class="chat-title">
+Live Chat
+</div>
+
+<div class="chat-sub">
+MQTT Broker Protected
+</div>
+
+</div>
+
+<div style="font-size:24px">
+⚡
+</div>
+
+</div>
+
+<div id="chat">
+
+<div class="system-msg">
+
+Video playback working successfully ✅<br><br>
+
+MQTT topics decoded successfully ✅<br><br>
+
+But external browser websocket authentication is restricted by broker.
+
+</div>
+
+</div>
+
+<div class="input-wrap">
+
+<input
+placeholder="MQTT broker protected"
+disabled
+/>
+
+<button disabled>
+🔒
+</button>
+
+</div>
+
+<div id="logs"></div>
+
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+<script>
+
+/* ===================================== */
+/* CONFIG */
+/* ===================================== */
+
+const DEVICE_ID =
+"ae2fa506-85ca-418d-a449-ec5868dc6665";
+
+const DEFAULT_TOKEN =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
+
+const API =
+"https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17861&course_id=151";
+
+/* ===================================== */
+
+function log(txt){
+
+console.log(txt);
+
+const logs =
+document.getElementById("logs");
+
+logs.innerHTML +=
+`<div>${txt}</div>`;
+
+logs.scrollTop =
+logs.scrollHeight;
+
+}
+
+/* ===================================== */
+/* INIT */
+/* ===================================== */
+
+async function init(){
+
+try{
+
+log("Fetching API...");
+
+const res = await fetch(API,{
+
+headers:{
+
+"authorization":
+"Bearer " + DEFAULT_TOKEN,
+
+"device-id":
+DEVICE_ID
+
+}
+
+});
+
+const json = await res.json();
+
+console.log(json);
+
+if(
+!json ||
+!json.success ||
+!json.data
+){
+
+throw new Error(
+"API returned null data"
+);
+
+}
+
+const data = json.data;
+
+document
+.getElementById("title")
+.innerText =
+data.title || "Untitled Live";
+
+document
+.getElementById("courseBox")
+.innerText =
+"Course: " +
+(data.id || "--");
+
+log("API Loaded");
+
+if(data.mqtt_live_cred){
+
+log(
+"PUBLIC TOPIC: " +
+data.mqtt_live_cred.public_chat_node
+);
+
+log(
+"PRIVATE TOPIC: " +
+data.mqtt_live_cred.private_chat_node
+);
+
+}
+
+/* PLAYER URL */
+
+let playerUrl = "";
+
+if(data.playerUrl){
+
+playerUrl =
+"https://proxy-test-three.vercel.app" +
+data.playerUrl;
+
+}else if(data.file_url){
+
+playerUrl =
+data.file_url;
+
+}else{
+
+throw new Error(
+"No playable URL"
+);
+
+}
+
+startPlayer(playerUrl);
+
+}catch(err){
+
+console.log(err);
+
+log(
+"INIT ERROR: " +
+err.message
+);
+
+}
+
+}
+
+/* ===================================== */
+/* PLAYER */
+/* ===================================== */
+
+function startPlayer(url){
+
+try{
+
+log("Starting player...");
+
+const video =
+document.getElementById("video");
+
+if(Hls.isSupported()){
+
+const hls = new Hls({
+
+enableWorker:true,
+lowLatencyMode:true
+
+});
+
+hls.loadSource(url);
+
+hls.attachMedia(video);
+
+hls.on(
+Hls.Events.MANIFEST_PARSED,
+()=>{
+
+video.play()
+.then(()=>{
+
+log(
+"Playback started"
+);
+
+})
+.catch((err)=>{
+
+console.log(err);
+
+log(
+"Autoplay blocked"
+);
+
+});
+
+}
+);
+
+hls.on(
+Hls.Events.ERROR,
+(event,data)=>{
+
+console.log(data);
+
+log("HLS ERROR");
+
+});
+
+}else{
+
+video.src = url;
+
+video.play();
+
+}
+
+}catch(err){
+
+console.log(err);
+
+log(
+"PLAYER ERROR: " +
+err.message
+);
+
+}
+
+}
+
+/* ===================================== */
+
+init();
+
+</script>
+
+</body>
+</html>
