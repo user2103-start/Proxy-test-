@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - SIMPLIFIED WORKING VERSION
+// api/proxy.js - UPDATED WITH CORS RESTRICTION
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -10,7 +10,16 @@ const APP_ID      = "1772100600";
 const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
 const DEFAULT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
 
-// Simple rate limiting
+// ALLOWED ORIGINS - Sirf ye domains allow honge
+const ALLOWED_ORIGINS = [
+    "https://proxy-test-three.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:8000",
+    "http://127.0.0.1:5500",
+    "https://missionjeet.vercel.app"
+];
+
+// Rate limiting
 const requestCounts = new Map();
 
 function checkRateLimit(ip) {
@@ -23,6 +32,18 @@ function checkRateLimit(ip) {
     if (userLimit.count >= 100) return false;
     userLimit.count++;
     return true;
+}
+
+// CORS handler
+function setCorsHeaders(res, origin) {
+    if (ALLOWED_ORIGINS.includes(origin)) {
+        res.setHeader("Access-Control-Allow-Origin", origin);
+    } else {
+        res.setHeader("Access-Control-Allow-Origin", "https://proxy-test-three.vercel.app");
+    }
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token, X-User-Id, X-Device-Id");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
 }
 
 // Get valid token
@@ -203,11 +224,13 @@ function getPDFViewerHTML(pdfUrl) {
 // ============================================================
 
 module.exports = async function handler(req, res) {
-    // CORS
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Refresh-Token");
+    // Get origin
+    const origin = req.headers.origin;
     
+    // Set CORS headers (only for allowed origins)
+    setCorsHeaders(res, origin);
+    
+    // Handle OPTIONS preflight
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
@@ -222,9 +245,22 @@ module.exports = async function handler(req, res) {
     const userToken = req.headers["authorization"] || null;
     
     try {
+        // Parse body for POST requests
+        let body = {};
+        if (req.method === "POST") {
+            try {
+                body = req.body || {};
+                if (typeof body === 'string') {
+                    body = JSON.parse(body);
+                }
+            } catch(e) {
+                body = {};
+            }
+        }
+        
         // ==================== SEND OTP ====================
         if (action === "sendotp") {
-            const { mobile } = req.body || req.query;
+            const { mobile } = body;
             if (!mobile) {
                 return res.status(400).json({ error: "mobile required" });
             }
@@ -244,7 +280,7 @@ module.exports = async function handler(req, res) {
         
         // ==================== VERIFY OTP ====================
         if (action === "verifyotp") {
-            const { mobile, otp } = req.body || req.query;
+            const { mobile, otp } = body;
             if (!mobile || !otp) {
                 return res.status(400).json({ error: "mobile and otp required" });
             }
@@ -273,7 +309,7 @@ module.exports = async function handler(req, res) {
         
         // ==================== REFRESH ====================
         if (action === "refresh") {
-            const { refreshToken } = req.body || req.query;
+            const { refreshToken } = body;
             if (!refreshToken) {
                 return res.status(400).json({ error: "refresh token required" });
             }
@@ -427,19 +463,48 @@ module.exports = async function handler(req, res) {
             return res.status(200).json(data);
         }
         
+        // ==================== TEST INFO ====================
+        if (action === "testinfo") {
+            const { test_id } = req.query;
+            if (!test_id) {
+                return res.status(400).json({ error: "test_id required" });
+            }
+            const response = await fetch(
+                `${TEST}/test/get-test-instructions?test_id=${test_id}`,
+                { headers: buildAuthHeaders() }
+            );
+            const data = await response.json();
+            return res.status(200).json(data);
+        }
+        
+        // ==================== TEST DATA ====================
+        if (action === "testdata") {
+            const { test_id } = req.query;
+            if (!test_id) {
+                return res.status(400).json({ error: "test_id required" });
+            }
+            const response = await fetch(
+                `${TEST}/test/get-test-data?test_id=${test_id}`,
+                { headers: buildAuthHeaders() }
+            );
+            const data = await response.json();
+            return res.status(200).json(data);
+        }
+        
         // ==================== STATS ====================
         if (action === "stats") {
             return res.status(200).json({
                 success: true,
                 status: "healthy",
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                allowedOrigins: ALLOWED_ORIGINS
             });
         }
         
         // ==================== DEFAULT ====================
         return res.status(400).json({
             error: "Invalid action",
-            actions: ["sendotp", "verifyotp", "refresh", "course", "content", "video", "player", "pdf", "live", "upcoming", "stats"]
+            actions: ["sendotp", "verifyotp", "refresh", "course", "content", "video", "player", "pdf", "live", "upcoming", "testinfo", "testdata", "stats"]
         });
         
     } catch (error) {
