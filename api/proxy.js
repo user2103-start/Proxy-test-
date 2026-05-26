@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - UPDATED WITH CORS RESTRICTION
+// api/proxy.js - UPDATED WITH .ts SUPPORT IN PLAYER
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -10,7 +10,7 @@ const APP_ID      = "1772100600";
 const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
 const DEFAULT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
 
-// ALLOWED ORIGINS - Sirf ye domains allow honge
+// ALLOWED ORIGINS
 const ALLOWED_ORIGINS = [
     "https://proxy-test-three.vercel.app",
     "http://localhost:3000",
@@ -84,7 +84,7 @@ function buildHeaders(token, userId) {
     };
 }
 
-// Build auth headers (without token)
+// Build auth headers
 function buildAuthHeaders() {
     return {
         "Content-Type": "application/json",
@@ -94,7 +94,9 @@ function buildAuthHeaders() {
     };
 }
 
-// Player HTML
+// ============================================================
+// UPDATED PLAYER HTML - Supports .ts, .m3u8, .mpd, .mp4
+// ============================================================
 function getPlayerHTML(videoUrl, title) {
     const videoTitle = title || "Video Player";
     return `<!DOCTYPE html>
@@ -106,83 +108,160 @@ function getPlayerHTML(videoUrl, title) {
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #000; }
-        video { width: 100%; height: 100vh; }
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            padding: 8px 12px;
-            border-radius: 8px;
+        body { background: #000; font-family: system-ui, sans-serif; }
+        .container { width: 100%; height: 100vh; display: flex; flex-direction: column; }
+        .video-wrapper { flex: 1; background: #000; position: relative; }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        .controls-bar {
+            background: #1a1a2e;
+            padding: 10px 16px;
             display: flex;
-            gap: 10px;
-            z-index: 100;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-top: 1px solid #2d2d44;
         }
-        select { padding: 5px 10px; border-radius: 5px; background: #333; color: white; border: none; }
+        .quality-select, .speed-select {
+            background: #2d2d44;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
         .back-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
             background: #667eea;
             color: white;
             border: none;
             padding: 8px 16px;
             border-radius: 8px;
             cursor: pointer;
-            z-index: 100;
+            font-size: 14px;
+        }
+        .title {
+            color: white;
+            flex: 1;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        @media (max-width: 768px) {
+            .controls-bar { padding: 8px 12px; }
+            .quality-select, .speed-select { padding: 4px 8px; font-size: 11px; }
+            .title { font-size: 12px; }
         }
     </style>
 </head>
 <body>
-    <button class="back-btn" onclick="history.back()">← Back</button>
-    <video id="video" controls></video>
-    <div class="controls">
-        <select id="qualitySelect">
-            <option value="auto">Auto</option>
-        </select>
-        <select id="speedSelect">
-            <option value="0.5">0.5x</option>
-            <option value="0.75">0.75x</option>
-            <option value="1" selected>1x</option>
-            <option value="1.25">1.25x</option>
-            <option value="1.5">1.5x</option>
-            <option value="2">2x</option>
-        </select>
+    <div class="container">
+        <div class="video-wrapper">
+            <video id="video" controls></video>
+        </div>
+        <div class="controls-bar">
+            <button class="back-btn" onclick="history.back()">← Back</button>
+            <div class="title">${videoTitle}</div>
+            <select id="qualitySelect" class="quality-select">
+                <option value="auto">Auto Quality</option>
+            </select>
+            <select id="speedSelect" class="speed-select">
+                <option value="0.5">0.5x</option>
+                <option value="0.75">0.75x</option>
+                <option value="1" selected>1x</option>
+                <option value="1.25">1.25x</option>
+                <option value="1.5">1.5x</option>
+                <option value="2">2x</option>
+            </select>
+        </div>
     </div>
     <script>
         const videoUrl = decodeURIComponent("${videoUrl}");
         const video = document.getElementById('video');
+        let hls = null;
         
-        if (Hls.isSupported()) {
-            const hls = new Hls();
-            hls.loadSource(videoUrl);
-            hls.attachMedia(video);
-            hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
-                const qualitySelect = document.getElementById('qualitySelect');
-                if (data.levels && data.levels.length > 1) {
-                    qualitySelect.innerHTML = '<option value="auto">Auto</option>';
-                    data.levels.forEach((level, i) => {
-                        if (level.height) {
-                            const option = document.createElement('option');
-                            option.value = i;
-                            option.textContent = level.height + 'p';
-                            qualitySelect.appendChild(option);
+        function initializePlayer() {
+            // Check if video URL is HLS (.m3u8) or DASH (.mpd)
+            if (videoUrl.includes('.m3u8') || videoUrl.includes('.mpd')) {
+                if (Hls.isSupported()) {
+                    if (hls) {
+                        hls.destroy();
+                    }
+                    hls = new Hls({
+                        maxBufferLength: 30,
+                        maxMaxBufferLength: 60,
+                        manifestLoadingMaxRetry: 3,
+                        levelLoadingMaxRetry: 3,
+                        fragLoadingMaxRetry: 3
+                    });
+                    hls.loadSource(videoUrl);
+                    hls.attachMedia(video);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
+                        const qualitySelect = document.getElementById('qualitySelect');
+                        if (data.levels && data.levels.length > 1) {
+                            qualitySelect.innerHTML = '<option value="auto">Auto Quality</option>';
+                            data.levels.forEach((level, i) => {
+                                if (level.height) {
+                                    const option = document.createElement('option');
+                                    option.value = i;
+                                    option.textContent = level.height + 'p';
+                                    qualitySelect.appendChild(option);
+                                }
+                            });
+                            qualitySelect.onchange = function() {
+                                hls.currentLevel = this.value === 'auto' ? -1 : parseInt(this.value);
+                            };
+                        }
+                        video.play().catch(function(e) { console.log('Autoplay prevented:', e); });
+                    });
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error('HLS Error:', data);
+                        if (data.fatal) {
+                            switch(data.type) {
+                                case Hls.ErrorTypes.NETWORK_ERROR:
+                                    setTimeout(function() { hls.startLoad(); }, 3000);
+                                    break;
+                                case Hls.ErrorTypes.MEDIA_ERROR:
+                                    hls.recoverMediaError();
+                                    break;
+                                default:
+                                    console.error('Fatal error, reloading...');
+                                    initializePlayer();
+                                    break;
+                            }
                         }
                     });
-                    qualitySelect.onchange = function() {
-                        hls.currentLevel = this.value === 'auto' ? -1 : parseInt(this.value);
-                    };
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = videoUrl;
+                    video.addEventListener('loadedmetadata', function() {
+                        video.play().catch(function(e) {});
+                    });
+                } else {
+                    video.innerHTML = '<p class="error">HLS not supported in this browser.</p>';
                 }
-                video.play();
-            });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-            video.src = videoUrl;
+            } else {
+                // For .mp4, .ts, or direct video files
+                video.src = videoUrl;
+                video.addEventListener('loadedmetadata', function() {
+                    video.play().catch(function(e) {});
+                });
+            }
         }
         
+        // Speed control
         document.getElementById('speedSelect').onchange = function() {
             video.playbackRate = parseFloat(this.value);
         };
+        
+        // Initialize player
+        initializePlayer();
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', function() {
+            if (hls) {
+                hls.destroy();
+            }
+        });
     </script>
 </body>
 </html>`;
@@ -224,18 +303,13 @@ function getPDFViewerHTML(pdfUrl) {
 // ============================================================
 
 module.exports = async function handler(req, res) {
-    // Get origin
     const origin = req.headers.origin;
-    
-    // Set CORS headers (only for allowed origins)
     setCorsHeaders(res, origin);
     
-    // Handle OPTIONS preflight
     if (req.method === "OPTIONS") {
         return res.status(200).end();
     }
     
-    // Rate limit
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!checkRateLimit(ip)) {
         return res.status(429).json({ error: "Too many requests" });
@@ -245,7 +319,6 @@ module.exports = async function handler(req, res) {
     const userToken = req.headers["authorization"] || null;
     
     try {
-        // Parse body for POST requests
         let body = {};
         if (req.method === "POST") {
             try {
@@ -386,15 +459,44 @@ module.exports = async function handler(req, res) {
             return res.status(200).json(data);
         }
         
-        // ==================== PLAYER ====================
+        // ==================== PLAYER (UPDATED - supports .ts, .m3u8, .mpd, .mp4) ====================
         if (action === "player") {
-            const { url, title } = req.query;
-            if (!url) {
-                return res.status(400).json({ error: "url required" });
+            let { url, id, title } = req.query;
+            let videoUrl = null;
+            
+            // Check if URL is provided
+            if (url) {
+                videoUrl = decodeURIComponent(url);
+            } 
+            // If ID is provided, fetch from proxy
+            else if (id && id.trim() !== "") {
+                try {
+                    const token = getValidToken(userToken);
+                    const userId = getUserIdFromToken(token);
+                    // Assuming you need to fetch video details by ID
+                    const response = await fetch(`${NT}/course/content-details?content_id=${id}`, {
+                        headers: buildHeaders(token, userId)
+                    });
+                    const data = await response.json();
+                    if (data.success && data.data && data.data.file_url) {
+                        videoUrl = data.data.file_url;
+                    } else {
+                        return res.status(404).json({ error: "Video not found" });
+                    }
+                } catch(e) {
+                    return res.status(500).json({ error: "Failed to fetch video: " + e.message });
+                }
+            } else {
+                return res.status(400).json({ error: "url or id parameter required" });
             }
-            const decodedUrl = decodeURIComponent(url);
+            
+            // Check if video URL is valid
+            if (!videoUrl) {
+                return res.status(400).json({ error: "Invalid video URL" });
+            }
+            
             res.setHeader('Content-Type', 'text/html');
-            return res.status(200).send(getPlayerHTML(decodedUrl, title));
+            return res.status(200).send(getPlayerHTML(videoUrl, title));
         }
         
         // ==================== PDF ====================
@@ -420,7 +522,7 @@ module.exports = async function handler(req, res) {
                 method: "POST",
                 headers: buildHeaders(token, userId),
                 body: JSON.stringify({
-                    course_id: String(course_id),
+                        course_id: String(course_id),
                     folder_id: "0",
                     is_free: "",
                     keyword: "",
