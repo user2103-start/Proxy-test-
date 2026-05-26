@@ -158,6 +158,13 @@ body{
 
 .msg-text{
     font-size:15px;
+    word-break:break-word;
+}
+
+.msg-time{
+    margin-top:6px;
+    font-size:11px;
+    color:#94a3b8;
 }
 
 .chat-input{
@@ -192,7 +199,7 @@ body{
 }
 
 #logs{
-    height:140px;
+    height:150px;
     overflow:auto;
     background:black;
     color:#00ff88;
@@ -204,6 +211,7 @@ body{
 
     .container{
         flex-direction:column;
+        height:auto;
     }
 
     .right{
@@ -251,7 +259,7 @@ playsinline
 <div class="overlay-top">
 
 <div class="overlay-chip" id="viewerCount">
-👀 Live
+👀 LIVE
 </div>
 
 </div>
@@ -267,7 +275,7 @@ Loading...
 <div class="meta">
 
 <div class="meta-item" id="courseId">
-Course
+Loading...
 </div>
 
 <div class="meta-item" id="statusBox">
@@ -275,7 +283,7 @@ Loading...
 </div>
 
 <div class="meta-item" id="mqttBox">
-MQTT Protected
+MQTT Connecting
 </div>
 
 </div>
@@ -298,25 +306,7 @@ Live Chat
 
 </div>
 
-<div id="chat">
-
-<div class="msg">
-
-<div class="msg-bubble">
-
-<div class="msg-name">
-System
-</div>
-
-<div class="msg-text">
-MQTT broker authorization blocked external browser access.
-</div>
-
-</div>
-
-</div>
-
-</div>
+<div id="chat"></div>
 
 <div class="chat-input">
 
@@ -324,13 +314,13 @@ MQTT broker authorization blocked external browser access.
 
 <input
 type="text"
-placeholder="MQTT Protected"
-disabled
+id="messageInput"
+placeholder="Type message..."
 >
 
 <button
 class="send-btn"
-disabled
+onclick="sendMessage()"
 >
 ➤
 </button>
@@ -346,11 +336,31 @@ disabled
 </div>
 
 <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <script>
 
+/* ===================================== */
+/* CONFIG */
+/* ===================================== */
+
 const API =
 "https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17981&course_id=151";
+
+const DEVICE_ID =
+"ae2fa506-85ca-418d-a449-ec5868dc6665";
+
+const DEFAULT_TOKEN =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
+
+let player;
+let mqttClient;
+let publicTopic = "";
+let privateTopic = "";
+
+/* ===================================== */
+/* LOG */
+/* ===================================== */
 
 function log(text){
 
@@ -359,13 +369,16 @@ function log(text){
     const logs =
         document.getElementById("logs");
 
-    logs.innerHTML += `<div>${text}</div>`;
+    logs.innerHTML +=
+        `<div>${text}</div>`;
 
     logs.scrollTop =
         logs.scrollHeight;
 }
 
-let player;
+/* ===================================== */
+/* INIT */
+/* ===================================== */
 
 async function init(){
 
@@ -388,7 +401,8 @@ async function init(){
 
         log("API Loaded");
 
-        const data = json.data;
+        const data =
+            json.data;
 
         document
             .getElementById("title")
@@ -407,12 +421,26 @@ async function init(){
             ? "LIVE NOW"
             : "RECORDED";
 
+        publicTopic =
+            data
+            .mqtt_live_cred
+            .public_chat_node;
+
+        privateTopic =
+            data
+            .mqtt_live_cred
+            .private_chat_node;
+
         log(
             "PUBLIC TOPIC: " +
-            data.mqtt_live_cred.public_chat_node
+            publicTopic
         );
 
-        startPlayer(data.file_url);
+        startPlayer(
+            data.file_url
+        );
+
+        connectMQTT();
 
     }catch(err){
 
@@ -426,6 +454,10 @@ async function init(){
     }
 
 }
+
+/* ===================================== */
+/* PLAYER */
+/* ===================================== */
 
 function startPlayer(url){
 
@@ -456,19 +488,276 @@ function startPlayer(url){
 
     player.ready(()=>{
 
-        log("Playback initialized");
+        log(
+            "Playback initialized"
+        );
 
     });
 
     player.on("error",()=>{
 
-        console.log(player.error());
+        console.log(
+            player.error()
+        );
 
         log("HLS ERROR");
 
     });
 
 }
+
+/* ===================================== */
+/* MQTT */
+/* ===================================== */
+
+function connectMQTT(){
+
+    const endpoint =
+    "wss://mqtt-ws.nexttoppers.com:8084/mqtt";
+
+    log(
+        "Trying MQTT: " +
+        endpoint
+    );
+
+    mqttClient = mqtt.connect(
+
+        endpoint,
+
+        {
+
+            clientId:
+                "web_" +
+                Math.random()
+                .toString(16)
+                .substring(2,10),
+
+            username:
+                DEVICE_ID,
+
+            password:
+                DEFAULT_TOKEN,
+
+            protocolId:"MQTT",
+
+            protocolVersion:4,
+
+            clean:true,
+
+            reconnectPeriod:5000,
+
+            connectTimeout:15000,
+
+            keepalive:60,
+
+            resubscribe:true
+
+        }
+
+    );
+
+    mqttClient.on(
+        "connect",
+        ()=>{
+
+            log(
+                "MQTT CONNECTED"
+            );
+
+            document
+                .getElementById(
+                    "mqttBox"
+                )
+                .innerText =
+                "MQTT CONNECTED";
+
+            mqttClient.subscribe(
+                publicTopic
+            );
+
+            mqttClient.subscribe(
+                privateTopic
+            );
+
+            log(
+                "Subscribed Successfully"
+            );
+
+        }
+    );
+
+    mqttClient.on(
+        "message",
+        (topic,message)=>{
+
+            try{
+
+                const raw =
+                    message.toString();
+
+                const data =
+                    JSON.parse(raw);
+
+                if(
+                    !data.message
+                ) return;
+
+                addMessage(data);
+
+            }catch(err){
+
+                console.log(err);
+
+            }
+
+        }
+    );
+
+    mqttClient.on(
+        "error",
+        (err)=>{
+
+            console.log(err);
+
+            log(
+                "MQTT ERROR"
+            );
+
+        }
+    );
+
+    mqttClient.on(
+        "close",
+        ()=>{
+
+            log(
+                "MQTT CLOSED"
+            );
+
+        }
+    );
+
+}
+
+/* ===================================== */
+/* CHAT */
+/* ===================================== */
+
+function addMessage(data){
+
+    const chat =
+        document.getElementById(
+            "chat"
+        );
+
+    const div =
+        document.createElement(
+            "div"
+        );
+
+    div.className =
+        "msg";
+
+    const time =
+        new Date(
+            parseInt(
+                data.date ||
+                Date.now()
+            )
+        ).toLocaleTimeString();
+
+    div.innerHTML = `
+
+        <div class="msg-bubble">
+
+            <div class="msg-name">
+                ${data.name || "Unknown"}
+            </div>
+
+            <div class="msg-text">
+                ${data.message}
+            </div>
+
+            <div class="msg-time">
+                ${time}
+            </div>
+
+        </div>
+
+    `;
+
+    chat.appendChild(div);
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+}
+
+/* ===================================== */
+/* SEND */
+/* ===================================== */
+
+function sendMessage(){
+
+    const input =
+        document.getElementById(
+            "messageInput"
+        );
+
+    const text =
+        input.value.trim();
+
+    if(!text) return;
+
+    if(
+        !mqttClient ||
+        !mqttClient.connected
+    ){
+
+        alert(
+            "MQTT not connected"
+        );
+
+        return;
+    }
+
+    const payload = {
+
+        course_id:"151",
+
+        date:
+            Date.now().toString(),
+
+        id:
+            "msg_" +
+            Math.random()
+            .toString(36)
+            .substring(2,10),
+
+        isPlaying:false,
+
+        message:text,
+
+        name:"Student",
+
+        platform:"1",
+
+        type:"text"
+    };
+
+    mqttClient.publish(
+
+        publicTopic,
+
+        JSON.stringify(payload)
+
+    );
+
+    input.value = "";
+
+}
+
+/* ===================================== */
 
 init();
 
