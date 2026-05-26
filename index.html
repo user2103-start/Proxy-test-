@@ -2,12 +2,10 @@
 <html lang="en">
 <head>
 
-<meta charset="UTF-8" />
+<meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
 <title>NextToppers Live</title>
-
-<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet"/>
 
 <style>
 
@@ -118,7 +116,6 @@ background:#101827;
 display:flex;
 flex-direction:column;
 border-left:1px solid rgba(255,255,255,.08);
-position:relative;
 }
 
 .chat-top{
@@ -144,48 +141,17 @@ margin-top:4px;
 #chat{
 flex:1;
 overflow-y:auto;
-overflow-x:hidden;
 padding:14px;
-scroll-behavior:smooth;
-}
-
-.msg{
-margin-bottom:14px;
-}
-
-.msg-box{
-background:#1b2742;
-padding:12px;
-border-radius:18px;
-}
-
-.msg-name{
-font-size:14px;
-font-weight:bold;
-color:#38bdf8;
-margin-bottom:6px;
-}
-
-.msg-text{
-font-size:15px;
-line-height:1.5;
-word-break:break-word;
-}
-
-.msg-time{
-margin-top:7px;
-font-size:11px;
-opacity:.65;
 }
 
 .system-msg{
 background:#172036;
-padding:12px;
+padding:14px;
 border-radius:14px;
-font-size:13px;
-line-height:1.5;
+font-size:14px;
+line-height:1.6;
 color:#94a3b8;
-margin-bottom:12px;
+margin-bottom:14px;
 }
 
 .input-wrap{
@@ -218,7 +184,7 @@ cursor:pointer;
 }
 
 #logs{
-height:110px;
+height:120px;
 overflow:auto;
 background:black;
 color:#00ff90;
@@ -277,8 +243,8 @@ muted
 LIVE
 </div>
 
-<div class="chip" id="mqttState">
-MQTT Protected
+<div class="chip">
+Player Active
 </div>
 
 </div>
@@ -297,8 +263,8 @@ Loading...
 Course: --
 </div>
 
-<div class="meta-box">
-Player Endpoint Enabled
+<div class="meta-box" id="statusBox">
+Status: Loading
 </div>
 
 <div class="meta-box">
@@ -308,7 +274,7 @@ JWT Loaded
 </div>
 
 <div class="live-now">
-🔴 LIVE CLASS RUNNING
+Checking status...
 </div>
 
 </div>
@@ -328,12 +294,12 @@ Live Chat
 </div>
 
 <div class="chat-sub">
-MQTT Broker Protected
+MQTT Protected
 </div>
 
 </div>
 
-<div style="font-size:24px">
+<div style="font-size:22px">
 ⚡
 </div>
 
@@ -343,11 +309,16 @@ MQTT Broker Protected
 
 <div class="system-msg">
 
-Video playback working successfully ✅<br><br>
+Video playback active ✅<br><br>
 
-MQTT topics decoded successfully ✅<br><br>
+Live status now fully synced with API.<br><br>
 
-But external browser websocket authentication is restricted by broker.
+If:
+<pre style="margin-top:8px">
+"live_status": 1
+</pre>
+
+then UI instantly becomes LIVE.
 
 </div>
 
@@ -387,7 +358,7 @@ const DEFAULT_TOKEN =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
 
 const API =
-"https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17861&course_id=151";
+"https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17981&course_id=151";
 
 /* ===================================== */
 
@@ -403,6 +374,115 @@ logs.innerHTML +=
 
 logs.scrollTop =
 logs.scrollHeight;
+
+}
+
+/* ===================================== */
+/* LIVE STATUS */
+/* ===================================== */
+
+function updateLiveStatus(data){
+
+const statusBox =
+document.getElementById("statusBox");
+
+const liveNow =
+document.querySelector(".live-now");
+
+const liveChip =
+document.querySelector(".live-chip");
+
+/* API IS SOURCE OF TRUTH */
+
+if(Number(data.live_status) === 1){
+
+statusBox.innerText =
+"Status: LIVE";
+
+liveNow.innerHTML =
+"🔴 LIVE NOW";
+
+liveChip.style.display =
+"inline-block";
+
+}else{
+
+statusBox.innerText =
+"Status: UPCOMING";
+
+liveChip.style.display =
+"none";
+
+const now =
+Math.floor(Date.now()/1000);
+
+const diff =
+Number(data.live_from) - now;
+
+if(diff > 0){
+
+const hrs =
+Math.floor(diff / 3600);
+
+const mins =
+Math.floor((diff % 3600) / 60);
+
+const secs =
+diff % 60;
+
+liveNow.innerHTML =
+`⏳ Starts in ${hrs}h ${mins}m ${secs}s`;
+
+const timer =
+setInterval(()=>{
+
+const current =
+Math.floor(Date.now()/1000);
+
+const left =
+Number(data.live_from) - current;
+
+if(left <= 0){
+
+clearInterval(timer);
+
+statusBox.innerText =
+"Status: LIVE";
+
+liveNow.innerHTML =
+"🔴 LIVE NOW";
+
+liveChip.style.display =
+"inline-block";
+
+location.reload();
+
+return;
+
+}
+
+const h =
+Math.floor(left / 3600);
+
+const m =
+Math.floor((left % 3600)/60);
+
+const s =
+left % 60;
+
+liveNow.innerHTML =
+`⏳ Starts in ${h}h ${m}m ${s}s`;
+
+},1000);
+
+}else{
+
+liveNow.innerHTML =
+"⏳ Upcoming Class";
+
+}
+
+}
 
 }
 
@@ -459,21 +539,9 @@ document
 "Course: " +
 (data.id || "--");
 
+updateLiveStatus(data);
+
 log("API Loaded");
-
-if(data.mqtt_live_cred){
-
-log(
-"PUBLIC TOPIC: " +
-data.mqtt_live_cred.public_chat_node
-);
-
-log(
-"PRIVATE TOPIC: " +
-data.mqtt_live_cred.private_chat_node
-);
-
-}
 
 /* PLAYER URL */
 
