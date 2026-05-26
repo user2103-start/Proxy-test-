@@ -2,10 +2,12 @@
 <html lang="en">
 <head>
 
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>NextToppers Live</title>
+<title>Mission JEET Live</title>
+
+<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
 
 <style>
 
@@ -16,9 +18,9 @@ box-sizing:border-box;
 }
 
 body{
-background:#081120;
-font-family:Arial,sans-serif;
+background:#0b1020;
 color:white;
+font-family:Arial,sans-serif;
 overflow:hidden;
 }
 
@@ -33,98 +35,108 @@ height:100vh;
 flex:1;
 display:flex;
 flex-direction:column;
-background:#0b1430;
+background:#0f172a;
 }
 
-.player-wrap{
+.topbar{
+height:60px;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 18px;
+background:#111827;
+border-bottom:1px solid rgba(255,255,255,.06);
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+}
+
+.live-chip{
+background:red;
+padding:6px 12px;
+border-radius:999px;
+font-size:13px;
+font-weight:bold;
+animation:pulse 1s infinite;
+}
+
+@keyframes pulse{
+0%{opacity:1;}
+50%{opacity:.5;}
+100%{opacity:1;}
+}
+
+.player-container{
 position:relative;
 width:100%;
+height:65vh;
 background:black;
 }
 
-video{
+.video-js{
 width:100%;
-height:42vh;
-background:black;
+height:100%;
 }
 
-.top-overlay{
+.overlay-top{
 position:absolute;
 top:15px;
 left:15px;
 display:flex;
 gap:10px;
-z-index:20;
+z-index:5;
 }
 
-.chip{
+.overlay-chip{
 background:rgba(0,0,0,.65);
-padding:8px 14px;
-border-radius:999px;
+padding:8px 12px;
+border-radius:12px;
 font-size:13px;
-font-weight:bold;
 backdrop-filter:blur(10px);
 }
 
-.live-chip{
-background:red;
-animation:pulse 1s infinite;
-}
-
-@keyframes pulse{
-0%{opacity:1}
-50%{opacity:.5}
-100%{opacity:1}
-}
-
-.info{
-padding:24px;
+.info-section{
+padding:18px;
 }
 
 .title{
-font-size:32px;
-font-weight:700;
-margin-bottom:18px;
-line-height:1.3;
+font-size:24px;
+font-weight:bold;
+margin-bottom:10px;
 }
 
 .meta{
 display:flex;
-gap:14px;
+gap:12px;
 flex-wrap:wrap;
-margin-bottom:20px;
 }
 
-.meta-box{
-background:#17223f;
-padding:12px 18px;
-border-radius:18px;
-font-size:15px;
+.meta-item{
+background:#172036;
+padding:8px 14px;
+border-radius:12px;
+font-size:13px;
 }
-
-.live-now{
-font-size:22px;
-font-weight:bold;
-color:#38bdf8;
-}
-
-/* RIGHT */
 
 .right{
-width:390px;
-background:#101827;
+width:380px;
+background:#111827;
 display:flex;
 flex-direction:column;
-border-left:1px solid rgba(255,255,255,.08);
+border-left:1px solid rgba(255,255,255,.06);
+position:relative;
 }
 
-.chat-top{
-height:75px;
-padding:18px;
+.chat-header{
+height:60px;
 display:flex;
 align-items:center;
 justify-content:space-between;
-border-bottom:1px solid rgba(255,255,255,.08);
+padding:0 16px;
+background:#0f172a;
+border-bottom:1px solid rgba(255,255,255,.06);
 }
 
 .chat-title{
@@ -132,51 +144,80 @@ font-size:18px;
 font-weight:bold;
 }
 
-.chat-sub{
-font-size:13px;
-color:#38bdf8;
-margin-top:4px;
-}
-
 #chat{
 flex:1;
 overflow-y:auto;
+overflow-x:hidden;
 padding:14px;
+scroll-behavior:smooth;
 }
 
-.system-msg{
-background:#172036;
-padding:14px;
-border-radius:14px;
-font-size:14px;
-line-height:1.6;
-color:#94a3b8;
+.msg{
 margin-bottom:14px;
+animation:fadeIn .2s ease;
+}
+
+@keyframes fadeIn{
+from{
+opacity:0;
+transform:translateY(10px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+.msg-bubble{
+background:#1e293b;
+padding:12px;
+border-radius:18px;
+}
+
+.msg-name{
+color:#38bdf8;
+font-size:13px;
+font-weight:bold;
+margin-bottom:6px;
+}
+
+.msg-text{
+font-size:15px;
+line-height:1.4;
+word-break:break-word;
+}
+
+.msg-time{
+margin-top:6px;
+font-size:11px;
+color:#94a3b8;
+}
+
+.chat-input{
+padding:12px;
+background:#0f172a;
+border-top:1px solid rgba(255,255,255,.06);
 }
 
 .input-wrap{
-padding:14px;
 display:flex;
 gap:10px;
-background:#0f172a;
-border-top:1px solid rgba(255,255,255,.08);
 }
 
 .input-wrap input{
 flex:1;
 border:none;
 outline:none;
-background:#1b2742;
-padding:15px;
-border-radius:18px;
+padding:14px;
+border-radius:16px;
+background:#1e293b;
 color:white;
-font-size:15px;
 }
 
-.input-wrap button{
-width:70px;
+.send-btn{
+width:50px;
 border:none;
-border-radius:18px;
+border-radius:16px;
 background:#2563eb;
 color:white;
 font-size:18px;
@@ -187,9 +228,24 @@ cursor:pointer;
 height:120px;
 overflow:auto;
 background:black;
-color:#00ff90;
+color:#00ff88;
 font-size:11px;
 padding:10px;
+}
+
+#newMsgIndicator{
+display:none;
+position:absolute;
+bottom:90px;
+right:20px;
+background:#2563eb;
+color:white;
+padding:10px 16px;
+border-radius:999px;
+font-size:13px;
+cursor:pointer;
+z-index:999;
+box-shadow:0 4px 20px rgba(0,0,0,.4);
 }
 
 @media(max-width:900px){
@@ -205,10 +261,10 @@ height:auto;
 
 .right{
 width:100%;
-height:55vh;
+height:500px;
 }
 
-video{
+.player-container{
 height:260px;
 }
 
@@ -222,36 +278,42 @@ height:260px;
 
 <div class="container">
 
-<!-- LEFT -->
-
 <div class="left">
 
-<div class="player-wrap">
+<div class="topbar">
 
-<video
-id="video"
-controls
-autoplay
-playsinline
-webkit-playsinline
-muted
-></video>
+<div class="logo">
+Mission JEET Live
+</div>
 
-<div class="top-overlay">
-
-<div class="chip live-chip">
+<div class="live-chip">
 LIVE
 </div>
 
-<div class="chip">
-Player Active
+</div>
+
+<div class="player-container">
+
+<video
+id="player"
+class="video-js vjs-default-skin"
+controls
+autoplay
+muted
+playsinline
+></video>
+
+<div class="overlay-top">
+
+<div class="overlay-chip">
+💬 Live Chat
 </div>
 
 </div>
 
 </div>
 
-<div class="info">
+<div class="info-section">
 
 <div class="title" id="title">
 Loading...
@@ -259,81 +321,59 @@ Loading...
 
 <div class="meta">
 
-<div class="meta-box" id="courseBox">
-Course: --
+<div class="meta-item" id="statusBox">
+Status: Connecting
 </div>
 
-<div class="meta-box" id="statusBox">
-Status: Loading
-</div>
-
-<div class="meta-box">
-JWT Loaded
-</div>
-
-</div>
-
-<div class="live-now">
-Checking status...
+<div class="meta-item" id="mqttBox">
+MQTT: Connecting
 </div>
 
 </div>
 
 </div>
 
-<!-- RIGHT -->
+</div>
 
 <div class="right">
 
-<div class="chat-top">
-
-<div>
+<div class="chat-header">
 
 <div class="chat-title">
 Live Chat
 </div>
 
-<div class="chat-sub">
-MQTT Protected
-</div>
+<div>⚡</div>
 
 </div>
 
-<div style="font-size:22px">
-⚡
+<div id="chat"></div>
+
+<div
+id="newMsgIndicator"
+onclick="scrollToBottom()"
+>
+⬇ New Messages
 </div>
 
-</div>
-
-<div id="chat">
-
-<div class="system-msg">
-
-Video playback active ✅<br><br>
-
-Live status now fully synced with API.<br><br>
-
-If:
-<pre style="margin-top:8px">
-"live_status": 1
-</pre>
-
-then UI instantly becomes LIVE.
-
-</div>
-
-</div>
+<div class="chat-input">
 
 <div class="input-wrap">
 
 <input
-placeholder="MQTT broker protected"
-disabled
-/>
+type="text"
+id="messageInput"
+placeholder="Type message..."
+>
 
-<button disabled>
-🔒
+<button
+class="send-btn"
+onclick="sendMessage()"
+>
+➤
 </button>
+
+</div>
 
 </div>
 
@@ -343,13 +383,15 @@ disabled
 
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <script>
 
-/* ===================================== */
-/* CONFIG */
-/* ===================================== */
+/* ================================= */
+
+const API =
+"https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17861&course_id=151";
 
 const DEVICE_ID =
 "ae2fa506-85ca-418d-a449-ec5868dc6665";
@@ -357,138 +399,34 @@ const DEVICE_ID =
 const DEFAULT_TOKEN =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
 
-const API =
-"https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17981&course_id=151";
+/* ================================= */
 
-/* ===================================== */
+let player;
+let mqttClient;
+let publicTopic = "";
+let privateTopic = "";
 
-function log(txt){
+const renderedMessages =
+new Set();
 
-console.log(txt);
+/* ================================= */
+
+function log(text){
+
+console.log(text);
 
 const logs =
 document.getElementById("logs");
 
 logs.innerHTML +=
-`<div>${txt}</div>`;
+`<div>${text}</div>`;
 
 logs.scrollTop =
 logs.scrollHeight;
 
 }
 
-/* ===================================== */
-/* LIVE STATUS */
-/* ===================================== */
-
-function updateLiveStatus(data){
-
-const statusBox =
-document.getElementById("statusBox");
-
-const liveNow =
-document.querySelector(".live-now");
-
-const liveChip =
-document.querySelector(".live-chip");
-
-/* API IS SOURCE OF TRUTH */
-
-if(Number(data.live_status) === 1){
-
-statusBox.innerText =
-"Status: LIVE";
-
-liveNow.innerHTML =
-"🔴 LIVE NOW";
-
-liveChip.style.display =
-"inline-block";
-
-}else{
-
-statusBox.innerText =
-"Status: UPCOMING";
-
-liveChip.style.display =
-"none";
-
-const now =
-Math.floor(Date.now()/1000);
-
-const diff =
-Number(data.live_from) - now;
-
-if(diff > 0){
-
-const hrs =
-Math.floor(diff / 3600);
-
-const mins =
-Math.floor((diff % 3600) / 60);
-
-const secs =
-diff % 60;
-
-liveNow.innerHTML =
-`⏳ Starts in ${hrs}h ${mins}m ${secs}s`;
-
-const timer =
-setInterval(()=>{
-
-const current =
-Math.floor(Date.now()/1000);
-
-const left =
-Number(data.live_from) - current;
-
-if(left <= 0){
-
-clearInterval(timer);
-
-statusBox.innerText =
-"Status: LIVE";
-
-liveNow.innerHTML =
-"🔴 LIVE NOW";
-
-liveChip.style.display =
-"inline-block";
-
-location.reload();
-
-return;
-
-}
-
-const h =
-Math.floor(left / 3600);
-
-const m =
-Math.floor((left % 3600)/60);
-
-const s =
-left % 60;
-
-liveNow.innerHTML =
-`⏳ Starts in ${h}h ${m}m ${s}s`;
-
-},1000);
-
-}else{
-
-liveNow.innerHTML =
-"⏳ Upcoming Class";
-
-}
-
-}
-
-}
-
-/* ===================================== */
-/* INIT */
-/* ===================================== */
+/* ================================= */
 
 async function init(){
 
@@ -496,77 +434,48 @@ try{
 
 log("Fetching API...");
 
-const res = await fetch(API,{
+const res =
+await fetch(API);
 
-headers:{
+const json =
+await res.json();
 
-"authorization":
-"Bearer " + DEFAULT_TOKEN,
+if(!json.success){
 
-"device-id":
-DEVICE_ID
+log("API FAILED");
 
+return;
 }
 
-});
+log("API Loaded");
 
-const json = await res.json();
-
-console.log(json);
-
-if(
-!json ||
-!json.success ||
-!json.data
-){
-
-throw new Error(
-"API returned null data"
-);
-
-}
-
-const data = json.data;
+const data =
+json.data;
 
 document
 .getElementById("title")
 .innerText =
-data.title || "Untitled Live";
+data.title;
 
-document
-.getElementById("courseBox")
-.innerText =
-"Course: " +
-(data.id || "--");
+publicTopic =
+data.mqtt_live_cred.public_chat_node;
 
-updateLiveStatus(data);
+privateTopic =
+data.mqtt_live_cred.private_chat_node;
 
-log("API Loaded");
-
-/* PLAYER URL */
-
-let playerUrl = "";
-
-if(data.playerUrl){
-
-playerUrl =
-"https://proxy-test-three.vercel.app" +
-data.playerUrl;
-
-}else if(data.file_url){
-
-playerUrl =
-data.file_url;
-
-}else{
-
-throw new Error(
-"No playable URL"
+log(
+"PUBLIC TOPIC: " +
+publicTopic
 );
 
-}
+log(
+"PRIVATE TOPIC: " +
+privateTopic
+);
 
-startPlayer(playerUrl);
+startPlayer(data);
+
+connectMQTT(data);
 
 }catch(err){
 
@@ -581,89 +490,376 @@ err.message
 
 }
 
-/* ===================================== */
+/* ================================= */
 /* PLAYER */
-/* ===================================== */
+/* ================================= */
 
-function startPlayer(url){
-
-try{
+function startPlayer(data){
 
 log("Starting player...");
 
-const video =
-document.getElementById("video");
+const streamUrl =
+data.file_url;
 
-if(Hls.isSupported()){
+player = videojs("player",{
 
-const hls = new Hls({
+autoplay:true,
+muted:true,
+controls:true,
+fluid:true,
+preload:"auto",
+liveui:true,
 
-enableWorker:true,
-lowLatencyMode:true
+html5:{
+vhs:{
+overrideNative:true
+}
+}
 
 });
 
-hls.loadSource(url);
+player.src({
 
-hls.attachMedia(video);
+src:streamUrl,
+type:"application/x-mpegURL"
 
-hls.on(
-Hls.Events.MANIFEST_PARSED,
-()=>{
+});
 
-video.play()
+player.ready(()=>{
+
+player.play()
 .then(()=>{
 
-log(
-"Playback started"
-);
+log("Playback initialized");
 
 })
-.catch((err)=>{
+.catch((e)=>{
 
-console.log(err);
+console.log(e);
 
-log(
-"Autoplay blocked"
-);
+log("Autoplay blocked");
 
 });
 
-}
-);
+});
 
-hls.on(
-Hls.Events.ERROR,
-(event,data)=>{
+player.on("error",()=>{
 
-console.log(data);
+const err =
+player.error();
+
+console.log(err);
 
 log("HLS ERROR");
 
 });
 
-}else{
+}
 
-video.src = url;
+/* ================================= */
+/* MQTT */
+/* ================================= */
 
-video.play();
+function connectMQTT(data){
+
+const endpoints = [
+
+"ws://mqtt-ws.nexttoppers.com:8083/mqtt",
+
+"wss://mqtt-ws.nexttoppers.com:8084/mqtt",
+
+"wss://mqtt-ws.nexttoppers.com/mqtt",
+
+"wss://mqtt-ws.nexttoppers.com:443/mqtt"
+
+];
+
+let current = 0;
+
+function tryNext(){
+
+if(current >= endpoints.length){
+
+log("MQTT FAILED");
+
+return;
+}
+
+const endpoint =
+endpoints[current++];
+
+log(
+"Trying MQTT: " +
+endpoint
+);
+
+mqttClient = mqtt.connect(
+endpoint,
+{
+
+clientId:
+"web_" +
+Math.random()
+.toString(16)
+.substring(2,10),
+
+username:DEVICE_ID,
+
+password:
+"Bearer " +
+DEFAULT_TOKEN,
+
+clean:true,
+
+reconnectPeriod:5000,
+
+connectTimeout:10000
 
 }
+);
+
+mqttClient.on(
+"connect",
+()=>{
+
+log(
+"MQTT CONNECTED"
+);
+
+document
+.getElementById(
+"mqttBox"
+)
+.innerText =
+"MQTT: Connected";
+
+mqttClient.subscribe(
+publicTopic
+);
+
+mqttClient.subscribe(
+privateTopic
+);
+
+}
+);
+
+mqttClient.on(
+"message",
+(topic,message)=>{
+
+try{
+
+const raw =
+message.toString();
+
+const data =
+JSON.parse(raw);
+
+if(
+!data.message
+) return;
+
+if(
+renderedMessages.has(
+data.id
+)
+) return;
+
+renderedMessages.add(
+data.id
+);
+
+addMessage(data);
 
 }catch(err){
 
 console.log(err);
 
-log(
-"PLAYER ERROR: " +
-err.message
+}
+
+}
+);
+
+mqttClient.on(
+"error",
+()=>{
+
+mqttClient.end(true);
+
+setTimeout(
+tryNext,
+2000
+);
+
+}
 );
 
 }
 
+tryNext();
+
 }
 
-/* ===================================== */
+/* ================================= */
+/* CHAT */
+/* ================================= */
+
+function addMessage(data){
+
+const chat =
+document.getElementById(
+"chat"
+);
+
+const isNearBottom =
+
+chat.scrollHeight -
+chat.scrollTop -
+chat.clientHeight
+
+< 120;
+
+const wrapper =
+document.createElement(
+"div"
+);
+
+wrapper.className =
+"msg";
+
+const time =
+new Date(
+
+parseInt(
+data.date ||
+Date.now()
+)
+
+).toLocaleTimeString();
+
+wrapper.innerHTML = `
+
+<div class="msg-bubble">
+
+<div class="msg-name">
+${data.name || "User"}
+</div>
+
+<div class="msg-text">
+${data.message}
+</div>
+
+<div class="msg-time">
+${time}
+</div>
+
+</div>
+
+`;
+
+chat.appendChild(wrapper);
+
+if(isNearBottom){
+
+chat.scrollTop =
+chat.scrollHeight;
+
+}else{
+
+document
+.getElementById(
+"newMsgIndicator"
+)
+.style.display =
+"block";
+
+}
+
+}
+
+/* ================================= */
+
+function scrollToBottom(){
+
+const chat =
+document.getElementById(
+"chat"
+);
+
+chat.scrollTop =
+chat.scrollHeight;
+
+document
+.getElementById(
+"newMsgIndicator"
+)
+.style.display =
+"none";
+
+}
+
+/* ================================= */
+
+function sendMessage(){
+
+const input =
+document.getElementById(
+"messageInput"
+);
+
+const text =
+input.value.trim();
+
+if(!text) return;
+
+if(!mqttClient){
+
+alert(
+"MQTT not connected"
+);
+
+return;
+}
+
+const payload = {
+
+course_id:"17861",
+
+date:
+Date.now().toString(),
+
+id:
+"msg_" +
+Math.random()
+.toString(36)
+.substring(2,12),
+
+isPlaying:false,
+
+message:text,
+
+name:"Mission JEET",
+
+platform:"1",
+
+type:"text"
+
+};
+
+mqttClient.publish(
+
+publicTopic,
+
+JSON.stringify(payload)
+
+);
+
+input.value = "";
+
+}
+
+/* ================================= */
 
 init();
 
