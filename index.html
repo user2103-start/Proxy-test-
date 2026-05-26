@@ -2,15 +2,12 @@
 <html lang="en">
 <head>
 
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Mission JEET Live</title>
+<title>NextToppers Live</title>
 
-<link
-  href="https://vjs.zencdn.net/8.10.0/video-js.css"
-  rel="stylesheet"
-/>
+<link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet">
 
 <style>
 
@@ -31,8 +28,6 @@ body{
     display:flex;
     height:100vh;
 }
-
-/* LEFT */
 
 .left{
     flex:1;
@@ -62,13 +57,6 @@ body{
     border-radius:999px;
     font-size:13px;
     font-weight:bold;
-    animation:pulse 1s infinite;
-}
-
-@keyframes pulse{
-    0%{opacity:1;}
-    50%{opacity:.5;}
-    100%{opacity:1;}
 }
 
 .player-container{
@@ -97,7 +85,6 @@ body{
     padding:8px 12px;
     border-radius:12px;
     font-size:13px;
-    backdrop-filter:blur(10px);
 }
 
 .info-section{
@@ -123,22 +110,12 @@ body{
     font-size:13px;
 }
 
-#countdown{
-    margin-top:15px;
-    font-size:18px;
-    color:#38bdf8;
-    font-weight:bold;
-}
-
-/* RIGHT */
-
 .right{
     width:380px;
     background:#111827;
     display:flex;
     flex-direction:column;
     border-left:1px solid rgba(255,255,255,.06);
-    position:relative;
 }
 
 .chat-header{
@@ -156,33 +133,14 @@ body{
     font-weight:bold;
 }
 
-.online{
-    font-size:12px;
-    color:#38bdf8;
-}
-
 #chat{
     flex:1;
     overflow-y:auto;
-    overflow-x:hidden;
     padding:14px;
-    scroll-behavior:smooth;
 }
 
 .msg{
     margin-bottom:14px;
-    animation:fadeIn .2s ease;
-}
-
-@keyframes fadeIn{
-    from{
-        opacity:0;
-        transform:translateY(10px);
-    }
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
 }
 
 .msg-bubble{
@@ -200,14 +158,6 @@ body{
 
 .msg-text{
     font-size:15px;
-    line-height:1.4;
-    word-break:break-word;
-}
-
-.msg-time{
-    margin-top:6px;
-    font-size:11px;
-    color:#94a3b8;
 }
 
 .chat-input{
@@ -242,7 +192,7 @@ body{
 }
 
 #logs{
-    height:110px;
+    height:140px;
     overflow:auto;
     background:black;
     color:#00ff88;
@@ -250,43 +200,10 @@ body{
     padding:10px;
 }
 
-#newMsgIndicator{
-
-    display:none;
-
-    position:absolute;
-
-    bottom:90px;
-
-    right:20px;
-
-    background:#2563eb;
-
-    color:white;
-
-    padding:10px 16px;
-
-    border-radius:999px;
-
-    font-size:13px;
-
-    cursor:pointer;
-
-    z-index:999;
-
-    box-shadow:0 4px 20px rgba(0,0,0,.4);
-
-}
-
 @media(max-width:900px){
-
-    body{
-        overflow:auto;
-    }
 
     .container{
         flex-direction:column;
-        height:auto;
     }
 
     .right{
@@ -308,175 +225,132 @@ body{
 
 <div class="container">
 
-    <!-- LEFT -->
+<div class="left">
 
-    <div class="left">
+<div class="topbar">
 
-        <div class="topbar">
+<div class="logo">
+NextToppers Live
+</div>
 
-            <div class="logo">
-                Mission JEET Live
-            </div>
+<div class="live-chip">
+LIVE
+</div>
 
-            <div class="live-chip">
-                LIVE
-            </div>
+</div>
 
-        </div>
+<div class="player-container">
 
-        <div class="player-container">
+<video
+id="player"
+class="video-js vjs-default-skin"
+controls
+playsinline
+></video>
 
-            <video
-                id="player"
-                class="video-js vjs-default-skin"
-                controls
-                playsinline
-            ></video>
+<div class="overlay-top">
 
-            <div class="overlay-top">
+<div class="overlay-chip" id="viewerCount">
+👀 Live
+</div>
 
-                <div class="overlay-chip">
-                    💬 Live Chat
-                </div>
+</div>
 
-                <div
-                    class="overlay-chip"
-                    id="mqttBox"
-                >
-                    MQTT: Connecting
-                </div>
+</div>
 
-            </div>
+<div class="info-section">
 
-        </div>
+<div class="title" id="title">
+Loading...
+</div>
 
-        <div class="info-section">
+<div class="meta">
 
-            <div
-                class="title"
-                id="title"
-            >
-                Loading...
-            </div>
+<div class="meta-item" id="courseId">
+Course
+</div>
 
-            <div class="meta">
+<div class="meta-item" id="statusBox">
+Loading...
+</div>
 
-                <div
-                    class="meta-item"
-                    id="courseId"
-                >
-                    Course: --
-                </div>
+<div class="meta-item" id="mqttBox">
+MQTT Protected
+</div>
 
-                <div
-                    class="meta-item"
-                    id="statusBox"
-                >
-                    Status: LIVE
-                </div>
+</div>
 
-            </div>
+</div>
 
-            <div id="countdown">
-                🔴 LIVE NOW
-            </div>
+</div>
 
-        </div>
+<div class="right">
 
-    </div>
+<div class="chat-header">
 
-    <!-- RIGHT -->
+<div class="chat-title">
+Live Chat
+</div>
 
-    <div class="right">
+<div>
+⚡
+</div>
 
-        <div class="chat-header">
+</div>
 
-            <div>
+<div id="chat">
 
-                <div class="chat-title">
-                    Live Chat
-                </div>
+<div class="msg">
 
-                <div class="online">
-                    MQTT Protected
-                </div>
+<div class="msg-bubble">
 
-            </div>
+<div class="msg-name">
+System
+</div>
 
-            <div>⚡</div>
+<div class="msg-text">
+MQTT broker authorization blocked external browser access.
+</div>
 
-        </div>
+</div>
 
-        <div id="chat"></div>
+</div>
 
-        <div
-            id="newMsgIndicator"
-            onclick="scrollToBottom()"
-        >
-            ⬇ New Messages
-        </div>
+</div>
 
-        <div class="chat-input">
+<div class="chat-input">
 
-            <div class="input-wrap">
+<div class="input-wrap">
 
-                <input
-                    type="text"
-                    id="messageInput"
-                    placeholder="Type message..."
-                >
+<input
+type="text"
+placeholder="MQTT Protected"
+disabled
+>
 
-                <button
-                    class="send-btn"
-                    onclick="sendMessage()"
-                >
-                    ➤
-                </button>
+<button
+class="send-btn"
+disabled
+>
+➤
+</button>
 
-            </div>
+</div>
 
-        </div>
+</div>
 
-        <div id="logs"></div>
+<div id="logs"></div>
 
-    </div>
+</div>
 
 </div>
 
 <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 
 <script>
 
-/* ===================================== */
-/* CONFIG */
-/* ===================================== */
-
 const API =
 "https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17981&course_id=151";
-
-const DEVICE_ID =
-"ae2fa506-85ca-418d-a449-ec5868dc6665";
-
-const DEFAULT_TOKEN =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
-
-const MQTT_ENDPOINT =
-"wss://mqtt-ws.nexttoppers.com:8084/mqtt";
-
-/* ===================================== */
-
-let USER_NAME = "Student";
-
-let player;
-let mqttClient;
-let publicTopic = "";
-
-const renderedMessages = new Set();
-
-/* ===================================== */
-/* LOGS */
-/* ===================================== */
 
 function log(text){
 
@@ -485,50 +359,17 @@ function log(text){
     const logs =
         document.getElementById("logs");
 
-    logs.innerHTML +=
-        `<div>${text}</div>`;
+    logs.innerHTML += `<div>${text}</div>`;
 
     logs.scrollTop =
         logs.scrollHeight;
 }
 
-/* ===================================== */
-/* USER */
-/* ===================================== */
-
-async function fetchName(){
-
-    try{
-
-        const payload =
-            JSON.parse(
-                atob(
-                    DEFAULT_TOKEN
-                    .split(".")[1]
-                )
-            );
-
-        USER_NAME =
-            payload.name ||
-            ("User_" + payload.user_id);
-
-    }catch(err){
-
-        console.log(err);
-
-    }
-
-}
-
-/* ===================================== */
-/* INIT */
-/* ===================================== */
+let player;
 
 async function init(){
 
     try{
-
-        await fetchName();
 
         log("Fetching API...");
 
@@ -545,34 +386,33 @@ async function init(){
             return;
         }
 
-        const data =
-            json.data;
-
         log("API Loaded");
+
+        const data = json.data;
 
         document
             .getElementById("title")
             .innerText =
-            data.title || "Live Class";
+            data.title || "Untitled";
 
         document
             .getElementById("courseId")
             .innerText =
-            "Course: " + data.id;
+            "Content ID: " + data.id;
 
-        publicTopic =
-            data
-            .mqtt_live_cred
-            .public_chat_node;
+        document
+            .getElementById("statusBox")
+            .innerText =
+            data.live_status == 1
+            ? "LIVE NOW"
+            : "RECORDED";
 
         log(
             "PUBLIC TOPIC: " +
-            publicTopic
+            data.mqtt_live_cred.public_chat_node
         );
 
-        startPlayer(data);
-
-        connectMQTT(data);
+        startPlayer(data.file_url);
 
     }catch(err){
 
@@ -587,42 +427,31 @@ async function init(){
 
 }
 
-/* ===================================== */
-/* PLAYER */
-/* ===================================== */
-
-function startPlayer(data){
+function startPlayer(url){
 
     log("Starting player...");
 
-    player = videojs(
-        "player",
-        {
-            autoplay:false,
-            controls:true,
-            responsive:true,
-            fluid:true,
-            preload:"auto"
+    player = videojs("player",{
+
+        controls:true,
+        autoplay:false,
+        preload:"auto",
+        fluid:true,
+        liveui:true,
+
+        html5:{
+            vhs:{
+                overrideNative:true
+            }
         }
-    );
 
-    let videoUrl = "";
-
-    if(data.playerUrl){
-
-        videoUrl =
-            "https://proxy-test-three.vercel.app" +
-            data.playerUrl;
-
-    }else if(data.file_url){
-
-        videoUrl = data.file_url;
-
-    }
+    });
 
     player.src({
-        src: videoUrl,
+
+        src:url,
         type:"application/x-mpegURL"
+
     });
 
     player.ready(()=>{
@@ -633,311 +462,13 @@ function startPlayer(data){
 
     player.on("error",()=>{
 
-        log("HLS ERROR");
+        console.log(player.error());
 
-        console.log(
-            player.error()
-        );
+        log("HLS ERROR");
 
     });
 
 }
-
-/* ===================================== */
-/* MQTT */
-/* ===================================== */
-
-function connectMQTT(data){
-
-    log(
-        "Trying MQTT: " +
-        MQTT_ENDPOINT
-    );
-
-    mqttClient = mqtt.connect(
-        MQTT_ENDPOINT,
-        {
-            clientId:
-                "web_" +
-                Math.random()
-                .toString(16)
-                .substring(2,10),
-
-            username: DEVICE_ID,
-
-            password:
-                "Bearer " +
-                DEFAULT_TOKEN,
-
-            protocol:"wss",
-
-            clean:true,
-
-            reconnectPeriod:5000,
-
-            connectTimeout:15000
-        }
-    );
-
-    mqttClient.on(
-        "connect",
-        ()=>{
-
-            log(
-                "MQTT CONNECTED"
-            );
-
-            document
-                .getElementById("mqttBox")
-                .innerText =
-                "MQTT: Connected";
-
-            mqttClient.subscribe(
-                data
-                .mqtt_live_cred
-                .public_chat_node
-            );
-
-            mqttClient.subscribe(
-                data
-                .mqtt_live_cred
-                .private_chat_node
-            );
-
-            mqttClient.subscribe(
-                data
-                .mqtt_live_cred
-                .public_setting_node
-            );
-
-            log(
-                "Subscribed successfully"
-            );
-
-        }
-    );
-
-    mqttClient.on(
-        "message",
-        (topic,message)=>{
-
-            try{
-
-                const raw =
-                    message.toString();
-
-                addMessage(raw);
-
-            }catch(err){
-
-                console.log(err);
-
-            }
-
-        }
-    );
-
-    mqttClient.on(
-        "error",
-        (err)=>{
-
-            console.log(err);
-
-            log("MQTT ERROR");
-
-        }
-    );
-
-    mqttClient.on(
-        "close",
-        ()=>{
-
-            log("MQTT CLOSED");
-
-        }
-    );
-
-}
-
-/* ===================================== */
-/* CHAT */
-/* ===================================== */
-
-function scrollToBottom(){
-
-    const chat =
-        document.getElementById(
-            "chat"
-        );
-
-    chat.scrollTop =
-        chat.scrollHeight;
-
-    document
-        .getElementById(
-            "newMsgIndicator"
-        )
-        .style.display = "none";
-
-}
-
-function addMessage(raw){
-
-    try{
-
-        const data =
-            JSON.parse(raw);
-
-        if(!data.message) return;
-
-        if(
-            renderedMessages.has(
-                data.id
-            )
-        ) return;
-
-        renderedMessages.add(
-            data.id
-        );
-
-        const chat =
-            document.getElementById(
-                "chat"
-            );
-
-        const isNearBottom =
-
-            chat.scrollHeight -
-            chat.scrollTop -
-            chat.clientHeight
-
-            < 120;
-
-        const wrapper =
-            document.createElement(
-                "div"
-            );
-
-        wrapper.className =
-            "msg";
-
-        const time =
-            new Date(
-
-                parseInt(
-                    data.date ||
-                    Date.now()
-                )
-
-            ).toLocaleTimeString();
-
-        wrapper.innerHTML = `
-
-            <div class="msg-bubble">
-
-                <div class="msg-name">
-                    ${data.name || "Unknown"}
-                </div>
-
-                <div class="msg-text">
-                    ${data.message}
-                </div>
-
-                <div class="msg-time">
-                    ${time}
-                </div>
-
-            </div>
-
-        `;
-
-        chat.appendChild(wrapper);
-
-        if(isNearBottom){
-
-            chat.scrollTop =
-                chat.scrollHeight;
-
-        }else{
-
-            document
-                .getElementById(
-                    "newMsgIndicator"
-                )
-                .style.display =
-                "block";
-        }
-
-    }catch(err){
-
-        console.log(err);
-
-    }
-
-}
-
-/* ===================================== */
-/* SEND */
-/* ===================================== */
-
-function sendMessage(){
-
-    const input =
-        document.getElementById(
-            "messageInput"
-        );
-
-    const text =
-        input.value.trim();
-
-    if(!text) return;
-
-    if(!mqttClient){
-
-        alert(
-            "MQTT not connected"
-        );
-
-        return;
-    }
-
-    const payload = {
-
-        course_id:"151",
-
-        date:
-            Date.now().toString(),
-
-        id:
-            "msg_" +
-            Math.random()
-            .toString(36)
-            .substring(2,12),
-
-        isPlaying:false,
-
-        message:text,
-
-        name:USER_NAME,
-
-        platform:"1",
-
-        type:"text"
-    };
-
-    mqttClient.publish(
-
-        publicTopic,
-
-        JSON.stringify(payload)
-
-    );
-
-    input.value = "";
-
-}
-
-/* ===================================== */
 
 init();
 
