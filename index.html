@@ -29,8 +29,6 @@ display:flex;
 height:100vh;
 }
 
-/* LEFT */
-
 .left{
 flex:1;
 display:flex;
@@ -388,8 +386,6 @@ onclick="sendMessage()"
 
 <script>
 
-/* ================================= */
-
 const API =
 "https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=17981&course_id=151";
 
@@ -399,8 +395,6 @@ const DEVICE_ID =
 const DEFAULT_TOKEN =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
 
-/* ================================= */
-
 let player;
 let mqttClient;
 let publicTopic = "";
@@ -408,8 +402,6 @@ let privateTopic = "";
 
 const renderedMessages =
 new Set();
-
-/* ================================= */
 
 function log(text){
 
@@ -425,8 +417,6 @@ logs.scrollTop =
 logs.scrollHeight;
 
 }
-
-/* ================================= */
 
 async function init(){
 
@@ -490,10 +480,6 @@ err.message
 
 }
 
-/* ================================= */
-/* PLAYER */
-/* ================================= */
-
 function startPlayer(data){
 
 log("Starting player...");
@@ -556,15 +542,9 @@ log("HLS ERROR");
 
 }
 
-/* ================================= */
-/* MQTT */
-/* ================================= */
-
 function connectMQTT(data){
 
 const endpoints = [
-
-"ws://mqtt-ws.nexttoppers.com:8083/mqtt",
 
 "wss://mqtt-ws.nexttoppers.com:8084/mqtt",
 
@@ -701,10 +681,6 @@ tryNext();
 
 }
 
-/* ================================= */
-/* CHAT */
-/* ================================= */
-
 function addMessage(data){
 
 const chat =
@@ -778,8 +754,6 @@ document
 
 }
 
-/* ================================= */
-
 function scrollToBottom(){
 
 const chat =
@@ -798,8 +772,6 @@ document
 "none";
 
 }
-
-/* ================================= */
 
 function sendMessage(){
 
@@ -824,7 +796,7 @@ return;
 
 const payload = {
 
-course_id:"17861",
+course_id:"17981",
 
 date:
 Date.now().toString(),
@@ -858,8 +830,6 @@ JSON.stringify(payload)
 input.value = "";
 
 }
-
-/* ================================= */
 
 init();
 
