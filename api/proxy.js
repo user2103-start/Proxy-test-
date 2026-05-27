@@ -1,22 +1,25 @@
 // ============================================================
-// api/proxy.js - UPDATED WITH .ts SUPPORT IN PLAYER
+// api/proxy.js - UPDATED WITH NEW DEVICE ID & TOKEN
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
 const NT   = "https://course.nexttoppers.com";
 const TEST = "https://test.nexttoppers.com";
+const HOME = "https://home.nexttoppers.com";
 
 const APP_ID      = "1772100600";
-const DEVICE_ID   = "ae2fa506-85ca-418d-a449-ec5868dc6665";
-const DEFAULT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiYWUyZmE1MDYtODVjYS00MThkLWE0NDktZWM1ODY4ZGM2NjY1IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk3MTcyODMsImV4cCI6MTc4MjMwOTI4M30.8GtwQYGKQACNXyz2N_dtrm1YmIeo6f3B81_MXiQf3aU";
+const DEVICE_ID   = "2cfdeaea-ab62-41f8-9f7d-6568334e1826";  // ✅ UPDATED
+
+// ✅ UPDATED DEFAULT TOKEN
+const DEFAULT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMmNmZGVhZWEtYWI2Mi00MWY4LTlmN2QtNjU2ODMzNGUxODI2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk4ODU3MzAsImV4cCI6MTc4MjQ3NzczMH0.AeKMUiNGAeqXkMixTmyd6j6HM3gauNyafeba3fvPvWg";
 
 // ALLOWED ORIGINS
 const ALLOWED_ORIGINS = [
     "https://proxy-test-three.vercel.app",
+    "https://missionjeet.vercel.app",
     "http://localhost:3000",
     "http://localhost:8000",
-    "http://127.0.0.1:5500",
-    "https://missionjeet.vercel.app"
+    "http://127.0.0.1:5500"
 ];
 
 // Rate limiting
@@ -80,22 +83,24 @@ function buildHeaders(token, userId) {
         "platform": "3",
         "version": "1",
         "user_id": userId,
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "device_id": DEVICE_ID
     };
 }
 
-// Build auth headers
+// Build auth headers (without token)
 function buildAuthHeaders() {
     return {
         "Content-Type": "application/json",
         "app_id": APP_ID,
         "platform": "3",
-        "version": "1"
+        "version": "1",
+        "device_id": DEVICE_ID
     };
 }
 
 // ============================================================
-// UPDATED PLAYER HTML - Supports .ts, .m3u8, .mpd, .mp4
+// PLAYER HTML (with .ts support)
 // ============================================================
 function getPlayerHTML(videoUrl, title) {
     const videoTitle = title || "Video Player";
@@ -147,11 +152,6 @@ function getPlayerHTML(videoUrl, title) {
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        @media (max-width: 768px) {
-            .controls-bar { padding: 8px 12px; }
-            .quality-select, .speed-select { padding: 4px 8px; font-size: 11px; }
-            .title { font-size: 12px; }
-        }
     </style>
 </head>
 <body>
@@ -181,19 +181,10 @@ function getPlayerHTML(videoUrl, title) {
         let hls = null;
         
         function initializePlayer() {
-            // Check if video URL is HLS (.m3u8) or DASH (.mpd)
             if (videoUrl.includes('.m3u8') || videoUrl.includes('.mpd')) {
                 if (Hls.isSupported()) {
-                    if (hls) {
-                        hls.destroy();
-                    }
-                    hls = new Hls({
-                        maxBufferLength: 30,
-                        maxMaxBufferLength: 60,
-                        manifestLoadingMaxRetry: 3,
-                        levelLoadingMaxRetry: 3,
-                        fragLoadingMaxRetry: 3
-                    });
+                    if (hls) hls.destroy();
+                    hls = new Hls({ maxBufferLength: 30 });
                     hls.loadSource(videoUrl);
                     hls.attachMedia(video);
                     hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
@@ -212,56 +203,21 @@ function getPlayerHTML(videoUrl, title) {
                                 hls.currentLevel = this.value === 'auto' ? -1 : parseInt(this.value);
                             };
                         }
-                        video.play().catch(function(e) { console.log('Autoplay prevented:', e); });
-                    });
-                    hls.on(Hls.Events.ERROR, function(event, data) {
-                        console.error('HLS Error:', data);
-                        if (data.fatal) {
-                            switch(data.type) {
-                                case Hls.ErrorTypes.NETWORK_ERROR:
-                                    setTimeout(function() { hls.startLoad(); }, 3000);
-                                    break;
-                                case Hls.ErrorTypes.MEDIA_ERROR:
-                                    hls.recoverMediaError();
-                                    break;
-                                default:
-                                    console.error('Fatal error, reloading...');
-                                    initializePlayer();
-                                    break;
-                            }
-                        }
+                        video.play().catch(() => {});
                     });
                 } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
                     video.src = videoUrl;
-                    video.addEventListener('loadedmetadata', function() {
-                        video.play().catch(function(e) {});
-                    });
-                } else {
-                    video.innerHTML = '<p class="error">HLS not supported in this browser.</p>';
                 }
             } else {
-                // For .mp4, .ts, or direct video files
                 video.src = videoUrl;
-                video.addEventListener('loadedmetadata', function() {
-                    video.play().catch(function(e) {});
-                });
             }
         }
         
-        // Speed control
         document.getElementById('speedSelect').onchange = function() {
             video.playbackRate = parseFloat(this.value);
         };
         
-        // Initialize player
         initializePlayer();
-        
-        // Clean up on page unload
-        window.addEventListener('beforeunload', function() {
-            if (hls) {
-                hls.destroy();
-            }
-        });
     </script>
 </body>
 </html>`;
@@ -287,7 +243,6 @@ function getPDFViewerHTML(pdfUrl) {
             padding: 10px 20px;
             border-radius: 8px;
             text-decoration: none;
-            font-family: system-ui;
         }
     </style>
 </head>
@@ -306,9 +261,7 @@ module.exports = async function handler(req, res) {
     const origin = req.headers.origin;
     setCorsHeaders(res, origin);
     
-    if (req.method === "OPTIONS") {
-        return res.status(200).end();
-    }
+    if (req.method === "OPTIONS") return res.status(200).end();
     
     const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     if (!checkRateLimit(ip)) {
@@ -323,69 +276,44 @@ module.exports = async function handler(req, res) {
         if (req.method === "POST") {
             try {
                 body = req.body || {};
-                if (typeof body === 'string') {
-                    body = JSON.parse(body);
-                }
-            } catch(e) {
-                body = {};
-            }
+                if (typeof body === 'string') body = JSON.parse(body);
+            } catch(e) { body = {}; }
         }
         
-        // ==================== SEND OTP ====================
+        // ==================== AUTH APIs ====================
+        
         if (action === "sendotp") {
             const { mobile } = body;
-            if (!mobile) {
-                return res.status(400).json({ error: "mobile required" });
-            }
+            if (!mobile) return res.status(400).json({ error: "mobile required" });
             const response = await fetch(`${AUTH}/auth/check-user`, {
                 method: "POST",
                 headers: buildAuthHeaders(),
-                body: JSON.stringify({
-                    mobile: String(mobile),
-                    device_id: DEVICE_ID,
-                    mobile_otp_login: 1,
-                    otp: ""
-                })
+                body: JSON.stringify({ mobile: String(mobile), device_id: DEVICE_ID, mobile_otp_login: 1, otp: "" })
             });
             const data = await response.json();
             return res.status(200).json(data);
         }
         
-        // ==================== VERIFY OTP ====================
         if (action === "verifyotp") {
             const { mobile, otp } = body;
-            if (!mobile || !otp) {
-                return res.status(400).json({ error: "mobile and otp required" });
-            }
+            if (!mobile || !otp) return res.status(400).json({ error: "mobile and otp required" });
             const response = await fetch(`${AUTH}/auth/verify-otp`, {
                 method: "POST",
                 headers: buildAuthHeaders(),
-                body: JSON.stringify({
-                    mobile: String(mobile),
-                    otp: String(otp),
-                    signup_needed: "0",
-                    device_id: DEVICE_ID
-                })
+                body: JSON.stringify({ mobile: String(mobile), otp: String(otp), signup_needed: "0", device_id: DEVICE_ID })
             });
             const data = await response.json();
             const accessToken = data.data?.accessToken || data.accessToken;
             const refreshToken = data.data?.refreshToken || data.refreshToken;
             if (accessToken && refreshToken) {
-                return res.status(200).json({
-                    success: true,
-                    accessToken: accessToken,
-                    refreshToken: refreshToken
-                });
+                return res.status(200).json({ success: true, accessToken: accessToken, refreshToken: refreshToken });
             }
             return res.status(200).json(data);
         }
         
-        // ==================== REFRESH ====================
         if (action === "refresh") {
             const { refreshToken } = body;
-            if (!refreshToken) {
-                return res.status(400).json({ error: "refresh token required" });
-            }
+            if (!refreshToken) return res.status(400).json({ error: "refresh token required" });
             const response = await fetch(`${AUTH}/auth/refresh-token`, {
                 method: "POST",
                 headers: buildAuthHeaders(),
@@ -395,32 +323,25 @@ module.exports = async function handler(req, res) {
             return res.status(200).json(data);
         }
         
-        // ==================== COURSE ====================
+        // ==================== COURSE APIs ====================
+        
         if (action === "course") {
             const { course_id } = req.query;
-            if (!course_id) {
-                return res.status(400).json({ error: "course_id required" });
-            }
+            if (!course_id) return res.status(400).json({ error: "course_id required" });
             const token = getValidToken(userToken);
             const userId = getUserIdFromToken(token);
             const response = await fetch(`${NT}/course/course-details`, {
                 method: "POST",
                 headers: buildHeaders(token, userId),
-                body: JSON.stringify({
-                    course_id: String(course_id),
-                    parent_id: "0"
-                })
+                body: JSON.stringify({ course_id: String(course_id), parent_id: "0" })
             });
             const data = await response.json();
             return res.status(200).json(data);
         }
         
-        // ==================== CONTENT ====================
         if (action === "content") {
             const { course_id, folder_id } = req.query;
-            if (!course_id) {
-                return res.status(400).json({ error: "course_id required" });
-            }
+            if (!course_id) return res.status(400).json({ error: "course_id required" });
             const token = getValidToken(userToken);
             const userId = getUserIdFromToken(token);
             const response = await fetch(`${NT}/course/all-content`, {
@@ -440,18 +361,14 @@ module.exports = async function handler(req, res) {
             return res.status(200).json(data);
         }
         
-        // ==================== VIDEO ====================
         if (action === "video") {
             const { content_id, course_id } = req.query;
-            if (!content_id || !course_id) {
-                return res.status(400).json({ error: "content_id and course_id required" });
-            }
+            if (!content_id || !course_id) return res.status(400).json({ error: "content_id and course_id required" });
             const token = getValidToken(userToken);
             const userId = getUserIdFromToken(token);
-            const response = await fetch(
-                `${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`,
-                { headers: buildHeaders(token, userId) }
-            );
+            const response = await fetch(`${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`, {
+                headers: buildHeaders(token, userId)
+            });
             const data = await response.json();
             if (data.success && data.data && data.data.file_url) {
                 data.data.playerUrl = `/api/proxy?action=player&url=${encodeURIComponent(data.data.file_url)}&title=${encodeURIComponent(data.data.title || 'Video')}`;
@@ -459,141 +376,107 @@ module.exports = async function handler(req, res) {
             return res.status(200).json(data);
         }
         
-        // ==================== PLAYER (UPDATED - supports .ts, .m3u8, .mpd, .mp4) ====================
-        if (action === "player") {
-            let { url, id, title } = req.query;
-            let videoUrl = null;
-            
-            // Check if URL is provided
-            if (url) {
-                videoUrl = decodeURIComponent(url);
-            } 
-            // If ID is provided, fetch from proxy
-            else if (id && id.trim() !== "") {
-                try {
-                    const token = getValidToken(userToken);
-                    const userId = getUserIdFromToken(token);
-                    // Assuming you need to fetch video details by ID
-                    const response = await fetch(`${NT}/course/content-details?content_id=${id}`, {
-                        headers: buildHeaders(token, userId)
-                    });
-                    const data = await response.json();
-                    if (data.success && data.data && data.data.file_url) {
-                        videoUrl = data.data.file_url;
-                    } else {
-                        return res.status(404).json({ error: "Video not found" });
-                    }
-                } catch(e) {
-                    return res.status(500).json({ error: "Failed to fetch video: " + e.message });
-                }
-            } else {
-                return res.status(400).json({ error: "url or id parameter required" });
-            }
-            
-            // Check if video URL is valid
-            if (!videoUrl) {
-                return res.status(400).json({ error: "Invalid video URL" });
-            }
-            
-            res.setHeader('Content-Type', 'text/html');
-            return res.status(200).send(getPlayerHTML(videoUrl, title));
+        // ==================== NEW APIs ====================
+        
+        // User Profile API
+        if (action === "profile") {
+            const token = getValidToken(userToken);
+            const userId = getUserIdFromToken(token);
+            const response = await fetch(`${AUTH}/user/my-profile`, {
+                method: "GET",
+                headers: buildHeaders(token, userId)
+            });
+            const data = await response.json();
+            return res.status(200).json(data);
         }
         
-        // ==================== PDF ====================
+        // All Courses API
+        if (action === "all-courses") {
+            const token = getValidToken(userToken);
+            const userId = getUserIdFromToken(token);
+            const response = await fetch(`${NT}/course/all-course`, {
+                method: "POST",
+                headers: buildHeaders(token, userId),
+                body: JSON.stringify({
+                    view_type: "1",
+                    cat_id: "22",
+                    cat_parent_id: "0",
+                    page: "1",
+                    keyword: "",
+                    limit: "100",
+                    is_free: "0",
+                    is_trending: "0"
+                })
+            });
+            const data = await response.json();
+            return res.status(200).json(data);
+        }
+        
+        // Submit Test API
+        if (action === "submit-test") {
+            const { test_id, course_id, answers, total_time_spent } = body;
+            if (!test_id || !answers) {
+                return res.status(400).json({ error: "test_id and answers required" });
+            }
+            const token = getValidToken(userToken);
+            const userId = getUserIdFromToken(token);
+            const response = await fetch(`${TEST}/test/submit-test`, {
+                method: "POST",
+                headers: buildHeaders(token, userId),
+                body: JSON.stringify({
+                    test_id: String(test_id),
+                    course_id: String(course_id || ""),
+                    user_id: userId,
+                    answers: answers,
+                    total_time_spent: total_time_spent || 0
+                })
+            });
+            const data = await response.json();
+            return res.status(200).json(data);
+        }
+        
+        // ==================== PLAYER & PDF APIs ====================
+        
+        if (action === "player") {
+            const { url, title } = req.query;
+            if (!url) return res.status(400).json({ error: "url required" });
+            const decodedUrl = decodeURIComponent(url);
+            res.setHeader('Content-Type', 'text/html');
+            return res.status(200).send(getPlayerHTML(decodedUrl, title));
+        }
+        
         if (action === "pdf") {
             const { url } = req.query;
-            if (!url) {
-                return res.status(400).json({ error: "url required" });
-            }
+            if (!url) return res.status(400).json({ error: "url required" });
             const decodedUrl = decodeURIComponent(url);
             res.setHeader('Content-Type', 'text/html');
             return res.status(200).send(getPDFViewerHTML(decodedUrl));
         }
         
-        // ==================== LIVE ====================
-        if (action === "live") {
-            const { course_id } = req.query;
-            if (!course_id) {
-                return res.status(400).json({ error: "course_id required" });
-            }
-            const token = getValidToken(userToken);
-            const userId = getUserIdFromToken(token);
-            const response = await fetch(`${NT}/course/all-content`, {
-                method: "POST",
-                headers: buildHeaders(token, userId),
-                body: JSON.stringify({
-                        course_id: String(course_id),
-                    folder_id: "0",
-                    is_free: "",
-                    keyword: "",
-                    limit: "100",
-                    page: "1",
-                    parent_course_id: "0"
-                })
-            });
-            const data = await response.json();
-            if (data.success && data.data) {
-                data.live = data.data.filter(item => 
-                    item.data?.is_live === 1
-                );
-            }
-            return res.status(200).json(data);
-        }
+        // ==================== TEST INFO/DATA APIs ====================
         
-        // ==================== UPCOMING ====================
-        if (action === "upcoming") {
-            const { course_id } = req.query;
-            if (!course_id) {
-                return res.status(400).json({ error: "course_id required" });
-            }
-            const token = getValidToken(userToken);
-            const userId = getUserIdFromToken(token);
-            const response = await fetch(`${NT}/course/all-content`, {
-                method: "POST",
-                headers: buildHeaders(token, userId),
-                body: JSON.stringify({
-                    course_id: String(course_id),
-                    folder_id: "0",
-                    is_free: "",
-                    keyword: "",
-                    limit: "100",
-                    page: "1",
-                    parent_course_id: "0"
-                })
-            });
-            const data = await response.json();
-            return res.status(200).json(data);
-        }
-        
-        // ==================== TEST INFO ====================
         if (action === "testinfo") {
             const { test_id } = req.query;
-            if (!test_id) {
-                return res.status(400).json({ error: "test_id required" });
-            }
-            const response = await fetch(
-                `${TEST}/test/get-test-instructions?test_id=${test_id}`,
-                { headers: buildAuthHeaders() }
-            );
+            if (!test_id) return res.status(400).json({ error: "test_id required" });
+            const response = await fetch(`${TEST}/test/get-test-instructions?test_id=${test_id}`, {
+                headers: buildAuthHeaders()
+            });
             const data = await response.json();
             return res.status(200).json(data);
         }
         
-        // ==================== TEST DATA ====================
         if (action === "testdata") {
             const { test_id } = req.query;
-            if (!test_id) {
-                return res.status(400).json({ error: "test_id required" });
-            }
-            const response = await fetch(
-                `${TEST}/test/get-test-data?test_id=${test_id}`,
-                { headers: buildAuthHeaders() }
-            );
+            if (!test_id) return res.status(400).json({ error: "test_id required" });
+            const response = await fetch(`${TEST}/test/get-test-data?test_id=${test_id}`, {
+                headers: buildAuthHeaders()
+            });
             const data = await response.json();
             return res.status(200).json(data);
         }
         
-        // ==================== STATS ====================
+        // ==================== STATS API ====================
+        
         if (action === "stats") {
             return res.status(200).json({
                 success: true,
@@ -606,7 +489,7 @@ module.exports = async function handler(req, res) {
         // ==================== DEFAULT ====================
         return res.status(400).json({
             error: "Invalid action",
-            actions: ["sendotp", "verifyotp", "refresh", "course", "content", "video", "player", "pdf", "live", "upcoming", "testinfo", "testdata", "stats"]
+            actions: ["sendotp", "verifyotp", "refresh", "course", "content", "video", "profile", "all-courses", "submit-test", "player", "pdf", "testinfo", "testdata", "stats"]
         });
         
     } catch (error) {
