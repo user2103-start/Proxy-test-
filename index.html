@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Mission Jeet - Drona Courses</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0"/>
+
+  <meta http-equiv="Content-Security-Policy"
+        content="upgrade-insecure-requests">
+
+  <title>Mission Jeet</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
 
   <style>
+
     *{
       margin:0;
       padding:0;
@@ -16,7 +25,7 @@
 
     body{
       font-family:'Poppins',sans-serif;
-      background:#050816;
+      background:#030712;
       color:white;
       overflow-x:hidden;
     }
@@ -26,19 +35,19 @@
       position:fixed;
       inset:0;
       background:
-      radial-gradient(circle at top left,#5b21b655,transparent 30%),
+      radial-gradient(circle at top left,#4f46e555,transparent 30%),
       radial-gradient(circle at bottom right,#2563eb55,transparent 30%);
       z-index:-1;
     }
 
     .navbar{
       width:100%;
-      padding:20px 8%;
+      padding:22px 8%;
       display:flex;
-      justify-content:space-between;
       align-items:center;
+      justify-content:space-between;
       backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(255,255,255,0.08);
+      border-bottom:1px solid rgba(255,255,255,0.06);
       position:sticky;
       top:0;
       z-index:999;
@@ -47,25 +56,25 @@
     .logo{
       font-size:28px;
       font-weight:700;
-      background:linear-gradient(90deg,#60a5fa,#a78bfa);
+      background:linear-gradient(90deg,#60a5fa,#8b5cf6);
       -webkit-background-clip:text;
       -webkit-text-fill-color:transparent;
     }
 
     .hero{
-      padding:80px 8% 40px;
+      padding:80px 8% 30px;
       text-align:center;
     }
 
     .hero h1{
-      font-size:60px;
+      font-size:58px;
       line-height:1.1;
-      margin-bottom:20px;
+      margin-bottom:22px;
       font-weight:700;
     }
 
     .hero h1 span{
-      background:linear-gradient(90deg,#60a5fa,#a78bfa);
+      background:linear-gradient(90deg,#60a5fa,#8b5cf6);
       -webkit-background-clip:text;
       -webkit-text-fill-color:transparent;
     }
@@ -74,30 +83,29 @@
       max-width:750px;
       margin:auto;
       color:#cbd5e1;
-      font-size:18px;
       line-height:1.8;
+      font-size:18px;
     }
 
     .courses-grid{
       width:100%;
-      padding:40px 8% 100px;
+      padding:50px 8% 100px;
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
       gap:35px;
     }
 
     .course-card{
-      background:rgba(255,255,255,0.06);
+      background:rgba(255,255,255,0.05);
       border:1px solid rgba(255,255,255,0.08);
       border-radius:28px;
       overflow:hidden;
       backdrop-filter:blur(25px);
       transition:0.4s;
-      position:relative;
     }
 
     .course-card:hover{
-      transform:translateY(-10px);
+      transform:translateY(-8px);
       box-shadow:0 20px 50px rgba(0,0,0,0.4);
     }
 
@@ -113,55 +121,22 @@
 
     .course-title{
       font-size:24px;
-      font-weight:600;
-      margin-bottom:14px;
       line-height:1.4;
+      margin-bottom:16px;
+      font-weight:600;
     }
 
     .price-row{
       display:flex;
       align-items:center;
       gap:12px;
-      margin-bottom:20px;
-    }
-
-    .offer-price{
-      font-size:30px;
-      font-weight:700;
-      color:#60a5fa;
-    }
-
-    .mrp{
-      color:#94a3b8;
-      text-decoration:line-through;
-      font-size:18px;
-    }
-
-    .date-box{
-      display:flex;
-      justify-content:space-between;
-      gap:12px;
       margin-bottom:24px;
     }
 
-    .date-item{
-      flex:1;
-      background:rgba(255,255,255,0.05);
-      padding:14px;
-      border-radius:18px;
-      text-align:center;
-    }
-
-    .date-item h4{
-      font-size:13px;
-      color:#94a3b8;
-      margin-bottom:6px;
-      font-weight:500;
-    }
-
-    .date-item p{
-      font-size:14px;
-      font-weight:600;
+    .offer-price{
+      font-size:32px;
+      font-weight:700;
+      color:#60a5fa;
     }
 
     .explore-btn{
@@ -179,7 +154,6 @@
 
     .explore-btn:hover{
       transform:scale(1.02);
-      opacity:0.95;
     }
 
     .detail-page{
@@ -190,7 +164,6 @@
     .back-btn{
       margin-bottom:25px;
       display:inline-flex;
-      align-items:center;
       gap:8px;
       cursor:pointer;
       color:#93c5fd;
@@ -201,14 +174,15 @@
       width:100%;
       height:420px;
       object-fit:cover;
-      border-radius:30px;
+      border-radius:28px;
       margin-bottom:30px;
+      background:#111827;
     }
 
     .detail-title{
       font-size:48px;
-      margin-bottom:20px;
       line-height:1.2;
+      margin-bottom:18px;
     }
 
     .tabs{
@@ -224,7 +198,6 @@
       background:rgba(255,255,255,0.06);
       cursor:pointer;
       transition:0.3s;
-      border:1px solid transparent;
     }
 
     .tab.active{
@@ -233,15 +206,16 @@
 
     .tab-content{
       background:rgba(255,255,255,0.05);
-      padding:30px;
-      border-radius:24px;
       border:1px solid rgba(255,255,255,0.08);
+      border-radius:24px;
+      padding:30px;
+      min-height:250px;
     }
 
     .content-grid{
       display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(250px,1fr));
-      gap:20px;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:22px;
     }
 
     .content-card{
@@ -261,6 +235,7 @@
       width:100%;
       height:150px;
       object-fit:cover;
+      background:#111827;
     }
 
     .content-card div{
@@ -268,21 +243,22 @@
     }
 
     .content-card p{
-      font-size:16px;
       line-height:1.5;
+      font-size:16px;
     }
 
     .loader{
+      width:100%;
+      padding:80px 20px;
       text-align:center;
-      padding:60px;
-      font-size:20px;
       color:#cbd5e1;
+      font-size:18px;
     }
 
     .video-modal{
       position:fixed;
       inset:0;
-      background:rgba(0,0,0,0.8);
+      background:rgba(0,0,0,0.85);
       display:none;
       justify-content:center;
       align-items:center;
@@ -293,7 +269,7 @@
     .video-box{
       width:100%;
       max-width:900px;
-      background:#000;
+      background:black;
       border-radius:20px;
       overflow:hidden;
       position:relative;
@@ -303,10 +279,10 @@
       position:absolute;
       top:10px;
       right:15px;
-      color:white;
       font-size:28px;
+      color:white;
       cursor:pointer;
-      z-index:5;
+      z-index:10;
     }
 
     iframe{
@@ -334,136 +310,176 @@
       }
 
     }
+
   </style>
+
 </head>
+
 <body>
 
+  <!-- NAVBAR -->
   <nav class="navbar">
-    <div class="logo">MISSION JEET</div>
+
+    <div class="logo">
+      MISSION JEET
+    </div>
+
   </nav>
 
   <!-- LANDING PAGE -->
   <section id="landingPage">
 
     <div class="hero">
+
       <h1>
-        Crack JEE & NEET with <span>Drona 2.0</span>
+        Crack JEE & NEET with
+        <span>Drona 2.0</span>
       </h1>
 
       <p>
-        Explore premium JEE & NEET batches with structured content,
-        folders, lectures, demo classes and complete learning ecosystem.
+        Explore premium JEE & NEET courses with complete
+        modules, folders, demo lectures and smart learning.
       </p>
+
     </div>
 
-    <div class="courses-grid" id="coursesGrid"></div>
+    <div class="courses-grid"
+         id="coursesGrid"></div>
 
   </section>
 
   <!-- DETAIL PAGE -->
-  <section class="detail-page" id="detailPage">
+  <section class="detail-page"
+           id="detailPage">
 
-    <div class="back-btn" onclick="goBack()">
+    <div class="back-btn"
+         onclick="goBack()">
+
       ← Back to Courses
+
     </div>
 
-    <img id="detailThumbnail" class="detail-banner"/>
+    <img id="detailThumbnail"
+         class="detail-banner">
 
-    <h1 class="detail-title" id="detailTitle"></h1>
+    <h1 class="detail-title"
+        id="detailTitle"></h1>
 
     <div class="price-row">
-      <div class="offer-price" id="detailPrice"></div>
+
+      <div class="offer-price"
+           id="detailPrice"></div>
+
     </div>
 
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('overview', this)">
+
+      <div class="tab active"
+           onclick="switchTab('overview', this)">
+
         Overview
+
       </div>
 
-      <div class="tab" onclick="switchTab('content', this)">
+      <div class="tab"
+           onclick="switchTab('content', this)">
+
         Content
+
       </div>
 
-      <div class="tab" onclick="switchTab('demo', this)">
+      <div class="tab"
+           onclick="switchTab('demo', this)">
+
         Demo Lectures
+
       </div>
+
     </div>
 
-    <div class="tab-content" id="tabContent"></div>
+    <div class="tab-content"
+         id="tabContent"></div>
 
   </section>
 
   <!-- VIDEO MODAL -->
-  <div class="video-modal" id="videoModal">
+  <div class="video-modal"
+       id="videoModal">
+
     <div class="video-box">
-      <div class="close-video" onclick="closeVideo()">✕</div>
-      <iframe id="videoFrame" allowfullscreen></iframe>
+
+      <div class="close-video"
+           onclick="closeVideo()">
+
+        ✕
+
+      </div>
+
+      <iframe id="videoFrame"
+              allowfullscreen></iframe>
+
     </div>
+
   </div>
 
   <script>
 
-    // COURSES ARRAY
     const courses = [
+
       {
-        id: 184,
-        title: "Drona 2.0 NEET Class 11th",
-        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/241318_131_drona%202.0%20NEET%20banner%20app.png",
-        offer_price: "4999.00",
-        mrp: "",
-        start_date: "1772821801",
-        end_date: "1843410599"
+        id:184,
+        title:"Drona 2.0 NEET Class 11th",
+        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/241318_131_drona%202.0%20NEET%20banner%20app.png",
+        offer_price:"4999.00"
       },
+
       {
-        id: 185,
-        title: "Drona 2.0 JEE Class 11th",
-        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/2967410_131_drona%202.0%20JEE%20banner%20app.png",
-        offer_price: "4999.00",
-        mrp: "",
-        start_date: "1772821801",
-        end_date: "1843410599"
+        id:185,
+        title:"Drona 2.0 JEE Class 11th",
+        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/2967410_131_drona%202.0%20JEE%20banner%20app.png",
+        offer_price:"4999.00"
       },
+
       {
-        id: 151,
-        title: "Drona JEE class 11th",
-        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/7574748_131_Class%2011th%20Mission%20Jeet%20JEE%20App%20Banners.jpg",
-        offer_price: "4999.00",
-        mrp: "",
-        start_date: "1772821801",
-        end_date: "1843410599"
+        id:151,
+        title:"Drona JEE class 11th",
+        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/7574748_131_Class%2011th%20Mission%20Jeet%20JEE%20App%20Banners.jpg",
+        offer_price:"4999.00"
       },
+
       {
-        id: 152,
-        title: "Drona NEET class 11th",
-        thumbnail: "https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/4072473_131_Class%2011th%20Mission%20Jeets%20NEET%20App%20Banners.jpg",
-        offer_price: "4999.00",
-        mrp: "",
-        start_date: "1772821801",
-        end_date: "1843410599"
+        id:152,
+        title:"Drona NEET class 11th",
+        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/4072473_131_Class%2011th%20Mission%20Jeets%20NEET%20App%20Banners.jpg",
+        offer_price:"4999.00"
       }
+
     ];
 
-    const coursesGrid = document.getElementById("coursesGrid");
-    const landingPage = document.getElementById("landingPage");
-    const detailPage = document.getElementById("detailPage");
-    const tabContent = document.getElementById("tabContent");
+    const coursesGrid =
+      document.getElementById("coursesGrid");
+
+    const landingPage =
+      document.getElementById("landingPage");
+
+    const detailPage =
+      document.getElementById("detailPage");
+
+    const tabContent =
+      document.getElementById("tabContent");
 
     let currentCourse = null;
     let currentContent = [];
-
-    // FORMAT DATE
-    function formatDate(timestamp){
-      return new Date(timestamp * 1000).toLocaleDateString();
-    }
 
     // RENDER COURSES
     function renderCourses(){
 
       coursesGrid.innerHTML = courses.map(course => `
-      
+
         <div class="course-card">
 
-          <img class="thumbnail" src="${course.thumbnail}" />
+          <img class="thumbnail"
+               src="${course.thumbnail}">
 
           <div class="card-content">
 
@@ -472,33 +488,18 @@
             </h2>
 
             <div class="price-row">
+
               <div class="offer-price">
                 ₹${course.offer_price}
               </div>
 
-              ${
-                course.mrp
-                ? `<div class="mrp">₹${course.mrp}</div>`
-                : ''
-              }
             </div>
 
-            <div class="date-box">
+            <button class="explore-btn"
+                    onclick="openCourse(${course.id})">
 
-              <div class="date-item">
-                <h4>Starts</h4>
-                <p>${formatDate(course.start_date)}</p>
-              </div>
-
-              <div class="date-item">
-                <h4>Ends</h4>
-                <p>${formatDate(course.end_date)}</p>
-              </div>
-
-            </div>
-
-            <button class="explore-btn" onclick="openCourse(${course.id})">
               Explore
+
             </button>
 
           </div>
@@ -506,6 +507,7 @@
         </div>
 
       `).join('');
+
     }
 
     renderCourses();
@@ -526,38 +528,82 @@
 
       try{
 
+        const fallbackCourse =
+          courses.find(c => c.id == id);
+
         // COURSE API
         const courseRes = await fetch(
           `https://proxy-test-three.vercel.app/api/proxy?action=course&course_id=${id}`
         );
 
-        const courseData = await courseRes.json();
+        const courseJson = await courseRes.json();
 
-        currentCourse = courseData.data || courseData;
+        console.log("COURSE RESPONSE:", courseJson);
 
+        currentCourse = {
+          ...fallbackCourse,
+          ...(courseJson?.data || {}),
+          id:id
+        };
+
+        // UI
         document.getElementById("detailThumbnail").src =
-          currentCourse.thumbnail || '';
+
+          currentCourse.thumbnail ||
+          currentCourse.image ||
+          currentCourse.banner ||
+          fallbackCourse.thumbnail ||
+          '';
 
         document.getElementById("detailTitle").innerText =
-          currentCourse.title || currentCourse.course_name || 'Course';
+
+          currentCourse.title ||
+          currentCourse.course_name ||
+          fallbackCourse.title ||
+          'Course';
 
         document.getElementById("detailPrice").innerText =
-          `₹${currentCourse.offer_price || '4999'}`;
+
+          `₹${
+            currentCourse.offer_price ||
+            fallbackCourse.offer_price ||
+            '4999'
+          }`;
 
         // CONTENT API
         const contentRes = await fetch(
           `https://proxy-test-three.vercel.app/api/proxy?action=content&course_id=${id}`
         );
 
-        const contentData = await contentRes.json();
+        const contentJson = await contentRes.json();
 
-        currentContent = contentData.data || [];
+        console.log("CONTENT RESPONSE:", contentJson);
+
+        if(Array.isArray(contentJson)){
+          currentContent = contentJson;
+        }
+
+        else if(Array.isArray(contentJson.data)){
+          currentContent = contentJson.data;
+        }
+
+        else if(Array.isArray(contentJson.subjects)){
+          currentContent = contentJson.subjects;
+        }
+
+        else if(Array.isArray(contentJson.content)){
+          currentContent = contentJson.content;
+        }
+
+        else{
+          currentContent = [];
+        }
 
         renderOverview();
 
       }catch(err){
 
-        console.log(err);
+        console.log("FULL ERROR:", err);
 
         tabContent.innerHTML = `
           <div class="loader">
@@ -565,70 +611,174 @@
           </div>
         `;
       }
+
     }
 
-    // OVERVIEW TAB
+    // DYNAMIC OVERVIEW
     function renderOverview(){
 
-      tabContent.innerHTML = `
+      const hiddenKeys = [
+        "thumbnail",
+        "image",
+        "banner"
+      ];
+
+      let html = `
 
         <div style="line-height:1.9;color:#dbeafe;">
 
           <h2 style="margin-bottom:18px;">
-            ${currentCourse.title || ''}
+
+            ${
+              currentCourse.title ||
+              currentCourse.course_name ||
+              'Course'
+            }
+
           </h2>
 
-          <p>
-            Premium preparation batch with complete modules,
-            recorded lectures, structured content, tests and
-            smart learning system.
-          </p>
-
-          <br>
-
-          <p>
-            Course ID: ${currentCourse.id || ''}
-          </p>
-
-          <p>
-            Offer Price: ₹${currentCourse.offer_price || ''}
-          </p>
-
-        </div>
-
       `;
+
+      Object.keys(currentCourse).forEach(key => {
+
+        const value = currentCourse[key];
+
+        if(hiddenKeys.includes(key)) return;
+
+        // ARRAYS
+        if(Array.isArray(value) && value.length){
+
+          html += `
+
+            <div style="margin-top:30px;">
+
+              <h3 style="
+                margin-bottom:16px;
+                text-transform:capitalize;
+                color:#60a5fa;
+              ">
+
+                ${key}
+
+              </h3>
+
+              <div class="content-grid">
+
+          `;
+
+          value.forEach(item => {
+
+            const title =
+              item.title ||
+              item.name ||
+              item.course_name ||
+              'Untitled';
+
+            const thumb =
+              item.thumbnail ||
+              item.image ||
+              item.banner ||
+              'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
+
+            const itemId =
+              item.id ||
+              item.course_id ||
+              item.entity_id;
+
+            html += `
+
+              <div class="content-card"
+                   onclick="openDynamicItem('${itemId}')">
+
+                <img src="${thumb}">
+
+                <div>
+
+                  <p>${title}</p>
+
+                </div>
+
+              </div>
+
+            `;
+
+          });
+
+          html += `
+              </div>
+            </div>
+          `;
+        }
+
+        // TEXT VALUES
+        else if(
+          typeof value !== "object" &&
+          value !== null &&
+          value !== ""
+        ){
+
+          html += `
+
+            <p style="margin-bottom:10px;">
+
+              <strong style="color:#93c5fd;">
+                ${key}:
+              </strong>
+
+              ${value}
+
+            </p>
+
+          `;
+        }
+
+      });
+
+      html += `</div>`;
+
+      tabContent.innerHTML = html;
+
     }
 
-    // CONTENT TAB
+    // CONTENT
     function renderContent(data){
 
-      if(!data.length){
+      if(!data || !data.length){
+
         tabContent.innerHTML = `
           <div class="loader">
             No Content Found
           </div>
         `;
+
         return;
       }
 
       tabContent.innerHTML = `
+
         <div class="content-grid">
 
           ${data.map(item => `
 
             <div class="content-card"
+
                  onclick="handleContentClick(
-                   '${item.type}',
-                   '${item.entity_id}'
+                   '${item.type || 'video'}',
+                   '${item.entity_id || item.id || ''}'
                  )">
 
               <img src="${
+                item.thumbnail ||
                 item.data?.thumbnail ||
                 'https://cdn-icons-png.flaticon.com/512/3767/3767084.png'
-              }"/>
+              }">
 
               <div>
-                <p>${item.title || 'Untitled'}</p>
+
+                <p>
+                  ${item.title || item.name || 'Untitled'}
+                </p>
+
               </div>
 
             </div>
@@ -636,17 +786,24 @@
           `).join('')}
 
         </div>
+
       `;
+
     }
 
-    // DEMO TAB
+    // DEMO
     function renderDemo(){
 
       const demo = currentContent.filter(item =>
-        (item.title || '').toLowerCase().includes('demo')
+
+        (item.title || '')
+        .toLowerCase()
+        .includes('demo')
+
       );
 
       renderContent(demo);
+
     }
 
     // TAB SWITCH
@@ -668,11 +825,22 @@
       if(type === 'demo'){
         renderDemo();
       }
+
+    }
+
+    // OPEN DYNAMIC ITEMS
+    function openDynamicItem(id){
+
+      if(!id) return;
+
+      openCourse(id);
+
     }
 
     // CONTENT CLICK
     async function handleContentClick(type, entityId){
 
+      // FOLDER
       if(type === 'folder'){
 
         tabContent.innerHTML = `
@@ -687,16 +855,27 @@
             `https://proxy-test-three.vercel.app/api/proxy?action=content&course_id=${currentCourse.id}&folder_id=${entityId}`
           );
 
-          const data = await res.json();
+          const json = await res.json();
 
-          renderContent(data.data || []);
+          const folderData =
+
+            json?.data?.subjects ||
+            json?.data?.content ||
+            json?.data ||
+            [];
+
+          renderContent(folderData);
 
         }catch(err){
 
           console.log(err);
+
         }
 
-      }else{
+      }
+
+      // VIDEO
+      else{
 
         try{
 
@@ -704,19 +883,24 @@
             `https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=${entityId}&course_id=${currentCourse.id}`
           );
 
-          const data = await res.json();
+          const json = await res.json();
+
+          console.log("VIDEO API:", json);
 
           const videoUrl =
-            data?.data?.url ||
-            data?.url ||
+
+            json?.data?.url ||
+            json?.data?.video_url ||
+            json?.url ||
             '';
 
           if(videoUrl){
 
-            document.getElementById("videoModal").style.display = "flex";
+            document.getElementById("videoModal")
+            .style.display = "flex";
 
-            document.getElementById("videoFrame").src =
-              videoUrl;
+            document.getElementById("videoFrame")
+            .src = videoUrl;
 
           }else{
 
@@ -727,25 +911,31 @@
         }catch(err){
 
           console.log(err);
+
           alert("Unable to play video");
+
         }
 
       }
+
     }
 
     // CLOSE VIDEO
     function closeVideo(){
 
-      document.getElementById("videoModal").style.display = "none";
+      document.getElementById("videoModal")
+      .style.display = "none";
 
-      document.getElementById("videoFrame").src = "";
+      document.getElementById("videoFrame")
+      .src = "";
 
     }
 
-    // GO BACK
+    // BACK
     function goBack(){
 
       detailPage.style.display = "none";
+
       landingPage.style.display = "block";
 
       window.scrollTo(0,0);
