@@ -103,7 +103,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            z-index: 10; /* Cover the player entirely */
+            z-index: 10;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -138,7 +138,7 @@
             background-color: var(--card-bg);
             border-top: 1px solid #334155;
             display: grid;
-            grid-template-rows: auto 1fr auto; /* Static Head, Fluid Messages, Pinned Input */
+            grid-template-rows: auto 1fr auto;
             height: 100%;
             overflow: hidden;
             box-sizing: border-box;
@@ -281,7 +281,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
 
     <script>
-        // Core Configuration Maps from your payloads
+        // Core Configuration Maps
         const AUTH_CONFIG = {
             appId: "1772100600",
             deviceId: "2cfdeaea-ab62-41f8-9f7d-6568334e1826",
@@ -294,18 +294,19 @@
             streamUrl: "https://d1oxe6vjn5slmc.cloudfront.net/out/v1/f7f2b29f63794f35aac79a815cd24829/index.m3u8",
             thumbnailUrl: "https://dylnd2lqy6eys.cloudfront.net/1770981347/admin_v2/content/thumbnail/6375493_148_App%20Thumbnails%202026%20%283%29.png",
             mqttHost: "mqtt-ws.nexttoppers.com",
-            publicTopic: "177995853518121_public",
             
-            // Timing variables parsed out of your raw JSON
+            // Dual topic sub nodes
+            publicTopic: "177995853518121_public",
+            settingTopic: "177995853518121_setting",
+            
             liveFrom: 1779978600, 
             liveTo: 1779989400
         };
 
         let currentStudent = { name: "Student", id: AUTH_CONFIG.userId };
         let mqttClient;
-        let isLiveActive = false; // Internal tracking state variable
+        let isLiveActive = false;
 
-        // Set static configuration visual points
         document.getElementById('video-title').innerText = STREAM_CONFIG.title;
         document.getElementById('thumb-layer').style.backgroundImage = `url('${STREAM_CONFIG.thumbnailUrl}')`;
 
@@ -313,7 +314,6 @@
         const player = videojs('live-player');
         player.src({ src: STREAM_CONFIG.streamUrl, type: 'application/x-mpegURL' });
 
-        // 1. Time Converter & Countdown State Loop Engine
         function formatToIST(unixTimestamp) {
             const date = new Date(unixTimestamp * 1000);
             return date.toLocaleTimeString('en-IN', {
@@ -327,13 +327,11 @@
             const chatIndicator = document.getElementById('chat-indicator');
             const chatTitleText = document.getElementById('chat-title-text');
             
-            const currentTime = Math.floor(Date.now() / 1000); // Current unix epoch time
-            
+            const currentTime = Math.floor(Date.now() / 1000);
             const startTimeIST = formatToIST(STREAM_CONFIG.liveFrom);
             const endTimeIST = formatToIST(STREAM_CONFIG.liveTo);
 
             if (currentTime < STREAM_CONFIG.liveFrom) {
-                // Scenario A: Class is scheduled for the future
                 isLiveActive = false;
                 const delta = STREAM_CONFIG.liveFrom - currentTime;
                 const mins = Math.floor((delta % 3600) / 60);
@@ -343,41 +341,34 @@
                 statusBadge.innerText = `UPCOMING LECTURE • Scheduled at ${startTimeIST}`;
                 statusBadge.style.color = "#f59e0b";
                 
-                // Show Thumbnail Mask Cover
                 thumbLayer.style.display = "flex";
                 document.getElementById('wait-headline').innerText = "Class Starts Soon";
                 document.getElementById('wait-subtext').innerText = `Live stream starts at ${startTimeIST} (In ${countdownString})`;
                 
-                // Keep Chat Badge Inactive
                 chatIndicator.style.backgroundColor = "#64748b";
                 chatIndicator.style.animation = "none";
                 chatTitleText.innerText = "Live Chat (Offline)";
 
             } else if (currentTime >= STREAM_CONFIG.liveFrom && currentTime <= STREAM_CONFIG.liveTo) {
-                // Scenario B: Clock inside live window constraints
                 statusBadge.innerText = `● LIVE NOW (Ends at ${endTimeIST})`;
                 statusBadge.style.color = "#22c55e";
                 
-                // HIDE THUMBNAIL OVERLAY -> Reveal Player View canvas
                 thumbLayer.style.display = "none";
 
-                // Turn on blinking live chat indicator ring
                 chatIndicator.style.backgroundColor = "#ef4444";
                 chatIndicator.style.animation = "blink 1.5s infinite";
                 chatTitleText.innerText = "Live Chat";
 
                 if (!isLiveActive) {
                     isLiveActive = true;
-                    appendSystemMessage("Schedule checkpoint reached. Initializing secure live messaging channel...");
+                    appendSystemMessage("Schedule checkpoint reached. Connecting to stream nodes...");
                     connectToLiveChat();
                 }
             } else {
-                // Scenario C: Stream window timeframe expired
                 isLiveActive = false;
                 statusBadge.innerText = `CLASS ARCHIVED • Ended at ${endTimeIST}`;
                 statusBadge.style.color = "#94a3b8";
                 
-                // Remove thumbnail mask, let them play the final stream backup archive
                 thumbLayer.style.display = "none";
                 chatIndicator.style.backgroundColor = "#64748b";
                 chatIndicator.style.animation = "none";
@@ -385,7 +376,6 @@
             }
         }
 
-        // 2. Fetch User Profile Identity
         function loadUserProfile() {
             fetch('https://proxy-test-three.vercel.app/api/proxy?action=profile', {
                 headers: { 'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMmNmZGVhZWEtYWI2Mi00MWY4LTlmN2QtNjU2ODMzNGUxODI2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk4ODU3MzAsImV4cCI6MTc4MjQ3NzczMH0.AeKMUiNGAeqXkMixTmyd6j6HM3gauNyafeba3fvPvWg` }
@@ -395,19 +385,17 @@
                 if (data.success && data.data && data.data[0]) {
                     const profile = data.data[0];
                     currentStudent.name = profile.name || "Student";
-                    appendSystemMessage(`Verified profile identity frame for user: ${currentStudent.name}`);
+                    appendSystemMessage(`Verified user: ${currentStudent.name}`);
                 }
-                // Run calculations loop instantly following user data validation
                 calculateTimelineClock();
             })
             .catch(err => {
                 console.error(err);
-                appendSystemMessage("Profile registry check bypassed. Proceeding anonymously.");
+                appendSystemMessage("Profile registry check bypassed. Running fallback authentication.");
                 calculateTimelineClock();
             });
         }
 
-        // 3. Establish Connection to the Live MQTT Broker Node
         function connectToLiveChat() {
             mqttClient = new Paho.MQTT.Client(`wss://${STREAM_CONFIG.mqttHost}/mqtt`, currentStudent.id);
             
@@ -418,19 +406,37 @@
             mqttClient.onMessageArrived = (msg) => {
                 try {
                     const payload = JSON.parse(msg.payloadString);
-                    displayMessage(payload.name || payload.sender || "Student", payload.message || payload.text);
+                    
+                    // Comprehensive key matching for production chats
+                    const chatText = payload.message || payload.text || payload.msg || payload.chat || payload.content;
+                    const senderName = payload.name || payload.sender || payload.username || "Live Student";
+                    
+                    if (chatText) {
+                        displayMessage(senderName, chatText);
+                    } else if (msg.destinationName === STREAM_CONFIG.settingTopic) {
+                        console.log("System Node Signal:", payload);
+                    } else {
+                        // Fallback print for full object data arrays
+                        displayMessage(senderName, JSON.stringify(payload));
+                    }
                 } catch(e) {
-                    displayMessage("Student", msg.payloadString);
+                    // Raw string message fallback parsing
+                    displayMessage("Live Student", msg.payloadString);
                 }
             };
 
             const handshakeOptions = {
                 onSuccess: () => {
-                    appendSystemMessage("Live chat server connection authenticated successfully.");
+                    appendSystemMessage("Secure link established.");
+                    
+                    // Subscribe to BOTH critical channels
                     mqttClient.subscribe(STREAM_CONFIG.publicTopic);
+                    mqttClient.subscribe(STREAM_CONFIG.settingTopic);
+                    
+                    appendSystemMessage("Listening to channels successfully.");
                 },
                 onFailure: (err) => {
-                    appendSystemMessage("Live authentication fallback error. Retrying sync block...");
+                    appendSystemMessage("Live handshake error. Re-syncing framework...");
                     setTimeout(connectToLiveChat, 5000);
                 },
                 useSSL: true,
@@ -442,7 +448,6 @@
             mqttClient.connect(handshakeOptions);
         }
 
-        // 4. Send Message Handler
         function sendMessage() {
             const input = document.getElementById('chat-input');
             const messageText = input.value.trim();
@@ -462,10 +467,9 @@
                 mqttClient.send(message);
                 displayMessage("You", messageText);
             } else {
-                // Direct local mirror logging fallback if connection is inactive
                 displayMessage(`You (${currentStudent.name})`, messageText);
                 if (!isLiveActive) {
-                    appendSystemMessage("Message logged locally. Broker node is not listening for input before live window activation.");
+                    appendSystemMessage("Chat server holds transmission until live window triggers activation.");
                 }
             }
             input.value = '';
@@ -484,9 +488,8 @@
             displayMessage("System", text);
         }
 
-        // Execution Boot Initialization Triggers
         loadUserProfile();
-        setInterval(calculateTimelineClock, 10000); // Check timeline schedule every 10 seconds
+        setInterval(calculateTimelineClock, 10000); // Continuous timeline synchronization every 10s
     </script>
 </body>
 </html>
