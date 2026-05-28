@@ -1,948 +1,492 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Lecture Dashboard</title>
+    
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #3b82f6;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+        }
 
-  <meta charset="UTF-8" />
+        /* Prevent mobile browser viewport shifting */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0"/>
+        body {
+            display: grid;
+            grid-template-rows: 50px 1fr;
+        }
 
-  <meta http-equiv="Content-Security-Policy"
-        content="upgrade-insecure-requests">
+        header {
+            background-color: var(--card-bg);
+            padding: 0 20px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 50px;
+            box-sizing: border-box;
+        }
 
-  <title>Mission Jeet</title>
+        header h1 {
+            margin: 0;
+            font-size: 1.1rem;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 50%;
+        }
 
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+        .status-badge {
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background-color: #334155;
+            color: white;
+            text-align: center;
+        }
 
-  <style>
+        /* Main Workspace Window Layout */
+        .dashboard-container {
+            display: grid;
+            grid-template-rows: 40vh 1fr; /* Top video box, bottom chat box for portrait view */
+            height: 100%;
+            overflow: hidden;
+        }
 
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
-    }
+        @media (min-width: 992px) {
+            .dashboard-container {
+                grid-template-rows: 1fr;
+                grid-template-columns: 3fr 1fr;
+            }
+        }
 
-    body{
-      font-family:'Poppins',sans-serif;
-      background:#030712;
-      color:white;
-      overflow-x:hidden;
-    }
+        /* Video / Thumbnail Stack Holder Section */
+        .video-section {
+            background-color: #000;
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
 
-    body::before{
-      content:"";
-      position:fixed;
-      inset:0;
-      background:
-      radial-gradient(circle at top left,#4f46e555,transparent 30%),
-      radial-gradient(circle at bottom right,#2563eb55,transparent 30%);
-      z-index:-1;
-    }
+        .video-js {
+            width: 100% !important;
+            height: 100% !important;
+        }
 
-    .navbar{
-      width:100%;
-      padding:22px 8%;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      backdrop-filter:blur(20px);
-      border-bottom:1px solid rgba(255,255,255,0.06);
-      position:sticky;
-      top:0;
-      z-index:999;
-    }
+        /* Class Thumbnail Layer Overlay */
+        .thumbnail-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 10; /* Cover the player entirely */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
 
-    .logo{
-      font-size:28px;
-      font-weight:700;
-      background:linear-gradient(90deg,#60a5fa,#8b5cf6);
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-    }
+        .thumbnail-blur-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(4px);
+            z-index: 1;
+        }
 
-    .hero{
-      padding:80px 8% 30px;
-      text-align:center;
-    }
+        .waiting-box {
+            position: relative;
+            z-index: 2;
+            background: rgba(30, 41, 59, 0.9);
+            padding: 20px 30px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            max-width: 80%;
+        }
 
-    .hero h1{
-      font-size:58px;
-      line-height:1.1;
-      margin-bottom:22px;
-      font-weight:700;
-    }
+        .waiting-box h3 { margin: 0 0 8px 0; color: white;}
+        .waiting-box p { margin: 0; color: var(--text-muted); font-size: 0.9rem;}
 
-    .hero h1 span{
-      background:linear-gradient(90deg,#60a5fa,#8b5cf6);
-      -webkit-background-clip:text;
-      -webkit-text-fill-color:transparent;
-    }
+        /* Strict Chat Grid Layout Engine */
+        .chat-section {
+            background-color: var(--card-bg);
+            border-top: 1px solid #334155;
+            display: grid;
+            grid-template-rows: auto 1fr auto; /* Static Head, Fluid Messages, Pinned Input */
+            height: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
 
-    .hero p{
-      max-width:750px;
-      margin:auto;
-      color:#cbd5e1;
-      line-height:1.8;
-      font-size:18px;
-    }
+        @media (min-width: 992px) {
+            .chat-section {
+                border-top: none;
+                border-left: 1px solid #334155;
+            }
+        }
 
-    .courses-grid{
-      width:100%;
-      padding:50px 8% 100px;
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-      gap:35px;
-    }
+        .chat-header {
+            padding: 12px 15px;
+            border-bottom: 1px solid #334155;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-    .course-card{
-      background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:28px;
-      overflow:hidden;
-      backdrop-filter:blur(25px);
-      transition:0.4s;
-    }
+        .live-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            display: inline-block;
+        }
 
-    .course-card:hover{
-      transform:translateY(-8px);
-      box-shadow:0 20px 50px rgba(0,0,0,0.4);
-    }
+        .chat-messages {
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-sizing: border-box;
+        }
 
-    .thumbnail{
-      width:100%;
-      height:220px;
-      object-fit:cover;
-    }
+        .message {
+            font-size: 0.9rem;
+            background: #273549;
+            padding: 8px 12px;
+            border-radius: 8px;
+            word-break: break-word;
+        }
 
-    .card-content{
-      padding:25px;
-    }
+        .message .username {
+            color: var(--accent-color);
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
 
-    .course-title{
-      font-size:24px;
-      line-height:1.4;
-      margin-bottom:16px;
-      font-weight:600;
-    }
+        /* Pinned Bottom Input Row fixed layout */
+        .chat-input-area {
+            padding: 15px;
+            border-top: 1px solid #334155;
+            background-color: var(--card-bg);
+            display: flex;
+            gap: 10px;
+            box-sizing: border-box;
+        }
 
-    .price-row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      margin-bottom:24px;
-    }
+        .chat-input-area input {
+            flex: 1;
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            padding: 10px;
+            color: white;
+            outline: none;
+            font-size: 0.9rem;
+        }
 
-    .offer-price{
-      font-size:32px;
-      font-weight:700;
-      color:#60a5fa;
-    }
+        .chat-input-area input:focus {
+            border-color: var(--accent-color);
+        }
 
-    .explore-btn{
-      width:100%;
-      padding:16px;
-      border:none;
-      border-radius:18px;
-      background:linear-gradient(90deg,#2563eb,#7c3aed);
-      color:white;
-      font-size:17px;
-      font-weight:600;
-      cursor:pointer;
-      transition:0.3s;
-    }
+        .chat-input-area button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 0 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
-    .explore-btn:hover{
-      transform:scale(1.02);
-    }
-
-    .detail-page{
-      display:none;
-      padding:40px 8% 100px;
-    }
-
-    .back-btn{
-      margin-bottom:25px;
-      display:inline-flex;
-      gap:8px;
-      cursor:pointer;
-      color:#93c5fd;
-      font-weight:500;
-    }
-
-    .detail-banner{
-      width:100%;
-      height:420px;
-      object-fit:cover;
-      border-radius:28px;
-      margin-bottom:30px;
-      background:#111827;
-    }
-
-    .detail-title{
-      font-size:48px;
-      line-height:1.2;
-      margin-bottom:18px;
-    }
-
-    .tabs{
-      display:flex;
-      gap:15px;
-      margin:40px 0 30px;
-      flex-wrap:wrap;
-    }
-
-    .tab{
-      padding:14px 24px;
-      border-radius:16px;
-      background:rgba(255,255,255,0.06);
-      cursor:pointer;
-      transition:0.3s;
-    }
-
-    .tab.active{
-      background:linear-gradient(90deg,#2563eb,#7c3aed);
-    }
-
-    .tab-content{
-      background:rgba(255,255,255,0.05);
-      border:1px solid rgba(255,255,255,0.08);
-      border-radius:24px;
-      padding:30px;
-      min-height:250px;
-    }
-
-    .content-grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-      gap:22px;
-    }
-
-    .content-card{
-      background:rgba(255,255,255,0.05);
-      border-radius:22px;
-      overflow:hidden;
-      cursor:pointer;
-      transition:0.3s;
-      border:1px solid rgba(255,255,255,0.06);
-    }
-
-    .content-card:hover{
-      transform:translateY(-5px);
-    }
-
-    .content-card img{
-      width:100%;
-      height:150px;
-      object-fit:cover;
-      background:#111827;
-    }
-
-    .content-card div{
-      padding:18px;
-    }
-
-    .content-card p{
-      line-height:1.5;
-      font-size:16px;
-    }
-
-    .loader{
-      width:100%;
-      padding:80px 20px;
-      text-align:center;
-      color:#cbd5e1;
-      font-size:18px;
-    }
-
-    .video-modal{
-      position:fixed;
-      inset:0;
-      background:rgba(0,0,0,0.85);
-      display:none;
-      justify-content:center;
-      align-items:center;
-      z-index:9999;
-      padding:20px;
-    }
-
-    .video-box{
-      width:100%;
-      max-width:900px;
-      background:black;
-      border-radius:20px;
-      overflow:hidden;
-      position:relative;
-    }
-
-    .close-video{
-      position:absolute;
-      top:10px;
-      right:15px;
-      font-size:28px;
-      color:white;
-      cursor:pointer;
-      z-index:10;
-    }
-
-    iframe{
-      width:100%;
-      height:500px;
-      border:none;
-    }
-
-    @media(max-width:768px){
-
-      .hero h1{
-        font-size:38px;
-      }
-
-      .detail-title{
-        font-size:32px;
-      }
-
-      .detail-banner{
-        height:240px;
-      }
-
-      iframe{
-        height:250px;
-      }
-
-    }
-
-  </style>
-
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+    </style>
 </head>
-
 <body>
 
-  <!-- NAVBAR -->
-  <nav class="navbar">
+    <header>
+        <h1 id="video-title">Motion in a Plane | L4</h1>
+        <div class="status-badge" id="stream-status">Calculating Schedule...</div>
+    </header>
 
-    <div class="logo">
-      MISSION JEET
-    </div>
-
-  </nav>
-
-  <!-- LANDING PAGE -->
-  <section id="landingPage">
-
-    <div class="hero">
-
-      <h1>
-        Crack JEE & NEET with
-        <span>Drona 2.0</span>
-      </h1>
-
-      <p>
-        Explore premium JEE & NEET courses with complete
-        modules, folders, demo lectures and smart learning.
-      </p>
-
-    </div>
-
-    <div class="courses-grid"
-         id="coursesGrid"></div>
-
-  </section>
-
-  <!-- DETAIL PAGE -->
-  <section class="detail-page"
-           id="detailPage">
-
-    <div class="back-btn"
-         onclick="goBack()">
-
-      ← Back to Courses
-
-    </div>
-
-    <img id="detailThumbnail"
-         class="detail-banner">
-
-    <h1 class="detail-title"
-        id="detailTitle"></h1>
-
-    <div class="price-row">
-
-      <div class="offer-price"
-           id="detailPrice"></div>
-
-    </div>
-
-    <div class="tabs">
-
-      <div class="tab active"
-           onclick="switchTab('overview', this)">
-
-        Overview
-
-      </div>
-
-      <div class="tab"
-           onclick="switchTab('content', this)">
-
-        Content
-
-      </div>
-
-      <div class="tab"
-           onclick="switchTab('demo', this)">
-
-        Demo Lectures
-
-      </div>
-
-    </div>
-
-    <div class="tab-content"
-         id="tabContent"></div>
-
-  </section>
-
-  <!-- VIDEO MODAL -->
-  <div class="video-modal"
-       id="videoModal">
-
-    <div class="video-box">
-
-      <div class="close-video"
-           onclick="closeVideo()">
-
-        ✕
-
-      </div>
-
-      <iframe id="videoFrame"
-              allowfullscreen></iframe>
-
-    </div>
-
-  </div>
-
-  <script>
-
-    const courses = [
-
-      {
-        id:184,
-        title:"Drona 2.0 NEET Class 11th",
-        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/241318_131_drona%202.0%20NEET%20banner%20app.png",
-        offer_price:"4999.00"
-      },
-
-      {
-        id:185,
-        title:"Drona 2.0 JEE Class 11th",
-        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/2967410_131_drona%202.0%20JEE%20banner%20app.png",
-        offer_price:"4999.00"
-      },
-
-      {
-        id:151,
-        title:"Drona JEE class 11th",
-        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/7574748_131_Class%2011th%20Mission%20Jeet%20JEE%20App%20Banners.jpg",
-        offer_price:"4999.00"
-      },
-
-      {
-        id:152,
-        title:"Drona NEET class 11th",
-        thumbnail:"https://dulae92u7241v.cloudfront.net/1772100600/admin_v2/uploads/courses/thumbnail/4072473_131_Class%2011th%20Mission%20Jeets%20NEET%20App%20Banners.jpg",
-        offer_price:"4999.00"
-      }
-
-    ];
-
-    const coursesGrid =
-      document.getElementById("coursesGrid");
-
-    const landingPage =
-      document.getElementById("landingPage");
-
-    const detailPage =
-      document.getElementById("detailPage");
-
-    const tabContent =
-      document.getElementById("tabContent");
-
-    let currentCourse = null;
-    let currentContent = [];
-
-    // RENDER COURSES
-    function renderCourses(){
-
-      coursesGrid.innerHTML = courses.map(course => `
-
-        <div class="course-card">
-
-          <img class="thumbnail"
-               src="${course.thumbnail}">
-
-          <div class="card-content">
-
-            <h2 class="course-title">
-              ${course.title}
-            </h2>
-
-            <div class="price-row">
-
-              <div class="offer-price">
-                ₹${course.offer_price}
-              </div>
-
+    <div class="dashboard-container">
+        
+        <div class="video-section">
+            
+            <div class="thumbnail-overlay" id="thumb-layer">
+                <div class="thumbnail-blur-bg"></div>
+                <div class="waiting-box">
+                    <h3 id="wait-headline">Class Has Not Started</h3>
+                    <p id="wait-subtext">Waiting for broadcast scheduling anchor...</p>
+                </div>
             </div>
 
-            <button class="explore-btn"
-                    onclick="openCourse(${course.id})">
-
-              Explore
-
-            </button>
-
-          </div>
-
+            <video id="live-player" class="video-js vjs-default-skin vjs-big-play-centered" controls preload="auto">
+                <p class="vjs-no-js">To view this video please enable JavaScript</p>
+            </video>
         </div>
 
-      `).join('');
-
-    }
-
-    renderCourses();
-
-    // OPEN COURSE
-    async function openCourse(id){
-
-      window.scrollTo(0,0);
-
-      landingPage.style.display = "none";
-      detailPage.style.display = "block";
-
-      tabContent.innerHTML = `
-        <div class="loader">
-          Loading Course...
+        <div class="chat-section">
+            <div class="chat-header">
+                <span class="live-indicator" id="chat-indicator"></span> <span id="chat-title-text">Live Chat</span>
+            </div>
+            
+            <div class="chat-messages" id="chat-box">
+                <div class="message">
+                    <div class="username">System</div>
+                    Verifying student environment variables...
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key === 'Enter') sendMessage()">
+                <button onclick="sendMessage()">Send</button>
+            </div>
         </div>
-      `;
 
-      try{
+    </div>
 
-        const fallbackCourse =
-          courses.find(c => c.id == id);
+    <script src="https://vjs.zencdn.net/8.10.0/video.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
 
-        // COURSE API
-        const courseRes = await fetch(
-          `https://proxy-test-three.vercel.app/api/proxy?action=course&course_id=${id}`
-        );
-
-        const courseJson = await courseRes.json();
-
-        console.log("COURSE RESPONSE:", courseJson);
-
-        currentCourse = {
-          ...fallbackCourse,
-          ...(courseJson?.data || {}),
-          id:id
+    <script>
+        // Core Configuration Maps from your payloads
+        const AUTH_CONFIG = {
+            appId: "1772100600",
+            deviceId: "2cfdeaea-ab62-41f8-9f7d-6568334e1826",
+            token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMmNmZGVhZWEtYWI2Mi00MWY4LTlmN2QtNjU2ODMzNGUxODI2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk4ODU3MzAsImV4cCI6MTc4MjQ3NzczMH0.AeKMUiNGAeqXkMixTmyd6j6HM3gauNyafeba3fvPvWg",
+            userId: "3230561"
         };
 
-        // UI
-        document.getElementById("detailThumbnail").src =
+        const STREAM_CONFIG = {
+            title: "Motion in a Plane | L4",
+            streamUrl: "https://d1oxe6vjn5slmc.cloudfront.net/out/v1/f7f2b29f63794f35aac79a815cd24829/index.m3u8",
+            thumbnailUrl: "https://dylnd2lqy6eys.cloudfront.net/1770981347/admin_v2/content/thumbnail/6375493_148_App%20Thumbnails%202026%20%283%29.png",
+            mqttHost: "mqtt-ws.nexttoppers.com",
+            publicTopic: "177995853518121_public",
+            
+            // Timing variables parsed out of your raw JSON
+            liveFrom: 1779978600, 
+            liveTo: 1779989400
+        };
 
-          currentCourse.thumbnail ||
-          currentCourse.image ||
-          currentCourse.banner ||
-          fallbackCourse.thumbnail ||
-          '';
+        let currentStudent = { name: "Student", id: AUTH_CONFIG.userId };
+        let mqttClient;
+        let isLiveActive = false; // Internal tracking state variable
 
-        document.getElementById("detailTitle").innerText =
+        // Set static configuration visual points
+        document.getElementById('video-title').innerText = STREAM_CONFIG.title;
+        document.getElementById('thumb-layer').style.backgroundImage = `url('${STREAM_CONFIG.thumbnailUrl}')`;
 
-          currentCourse.title ||
-          currentCourse.course_name ||
-          fallbackCourse.title ||
-          'Course';
+        // Initialize VideoJS Player 
+        const player = videojs('live-player');
+        player.src({ src: STREAM_CONFIG.streamUrl, type: 'application/x-mpegURL' });
 
-        document.getElementById("detailPrice").innerText =
-
-          `₹${
-            currentCourse.offer_price ||
-            fallbackCourse.offer_price ||
-            '4999'
-          }`;
-
-        // CONTENT API
-        const contentRes = await fetch(
-          `https://proxy-test-three.vercel.app/api/proxy?action=content&course_id=${id}`
-        );
-
-        const contentJson = await contentRes.json();
-
-        console.log("CONTENT RESPONSE:", contentJson);
-
-        if(Array.isArray(contentJson)){
-          currentContent = contentJson;
+        // 1. Time Converter & Countdown State Loop Engine
+        function formatToIST(unixTimestamp) {
+            const date = new Date(unixTimestamp * 1000);
+            return date.toLocaleTimeString('en-IN', {
+                timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: true
+            });
         }
 
-        else if(Array.isArray(contentJson.data)){
-          currentContent = contentJson.data;
-        }
+        function calculateTimelineClock() {
+            const statusBadge = document.getElementById('stream-status');
+            const thumbLayer = document.getElementById('thumb-layer');
+            const chatIndicator = document.getElementById('chat-indicator');
+            const chatTitleText = document.getElementById('chat-title-text');
+            
+            const currentTime = Math.floor(Date.now() / 1000); // Current unix epoch time
+            
+            const startTimeIST = formatToIST(STREAM_CONFIG.liveFrom);
+            const endTimeIST = formatToIST(STREAM_CONFIG.liveTo);
 
-        else if(Array.isArray(contentJson.subjects)){
-          currentContent = contentJson.subjects;
-        }
+            if (currentTime < STREAM_CONFIG.liveFrom) {
+                // Scenario A: Class is scheduled for the future
+                isLiveActive = false;
+                const delta = STREAM_CONFIG.liveFrom - currentTime;
+                const mins = Math.floor((delta % 3600) / 60);
+                const hrs = Math.floor(delta / 3600);
+                const countdownString = hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
 
-        else if(Array.isArray(contentJson.content)){
-          currentContent = contentJson.content;
-        }
+                statusBadge.innerText = `UPCOMING LECTURE • Scheduled at ${startTimeIST}`;
+                statusBadge.style.color = "#f59e0b";
+                
+                // Show Thumbnail Mask Cover
+                thumbLayer.style.display = "flex";
+                document.getElementById('wait-headline').innerText = "Class Starts Soon";
+                document.getElementById('wait-subtext').innerText = `Live stream starts at ${startTimeIST} (In ${countdownString})`;
+                
+                // Keep Chat Badge Inactive
+                chatIndicator.style.backgroundColor = "#64748b";
+                chatIndicator.style.animation = "none";
+                chatTitleText.innerText = "Live Chat (Offline)";
 
-        else{
-          currentContent = [];
-        }
+            } else if (currentTime >= STREAM_CONFIG.liveFrom && currentTime <= STREAM_CONFIG.liveTo) {
+                // Scenario B: Clock inside live window constraints
+                statusBadge.innerText = `● LIVE NOW (Ends at ${endTimeIST})`;
+                statusBadge.style.color = "#22c55e";
+                
+                // HIDE THUMBNAIL OVERLAY -> Reveal Player View canvas
+                thumbLayer.style.display = "none";
 
-        renderOverview();
+                // Turn on blinking live chat indicator ring
+                chatIndicator.style.backgroundColor = "#ef4444";
+                chatIndicator.style.animation = "blink 1.5s infinite";
+                chatTitleText.innerText = "Live Chat";
 
-      }catch(err){
-
-        console.log("FULL ERROR:", err);
-
-        tabContent.innerHTML = `
-          <div class="loader">
-            Failed to load data
-          </div>
-        `;
-      }
-
-    }
-
-    // DYNAMIC OVERVIEW
-    function renderOverview(){
-
-      const hiddenKeys = [
-        "thumbnail",
-        "image",
-        "banner"
-      ];
-
-      let html = `
-
-        <div style="line-height:1.9;color:#dbeafe;">
-
-          <h2 style="margin-bottom:18px;">
-
-            ${
-              currentCourse.title ||
-              currentCourse.course_name ||
-              'Course'
+                if (!isLiveActive) {
+                    isLiveActive = true;
+                    appendSystemMessage("Schedule checkpoint reached. Initializing secure live messaging channel...");
+                    connectToLiveChat();
+                }
+            } else {
+                // Scenario C: Stream window timeframe expired
+                isLiveActive = false;
+                statusBadge.innerText = `CLASS ARCHIVED • Ended at ${endTimeIST}`;
+                statusBadge.style.color = "#94a3b8";
+                
+                // Remove thumbnail mask, let them play the final stream backup archive
+                thumbLayer.style.display = "none";
+                chatIndicator.style.backgroundColor = "#64748b";
+                chatIndicator.style.animation = "none";
+                chatTitleText.innerText = "Archive Discussion Board";
             }
-
-          </h2>
-
-      `;
-
-      Object.keys(currentCourse).forEach(key => {
-
-        const value = currentCourse[key];
-
-        if(hiddenKeys.includes(key)) return;
-
-        // ARRAYS
-        if(Array.isArray(value) && value.length){
-
-          html += `
-
-            <div style="margin-top:30px;">
-
-              <h3 style="
-                margin-bottom:16px;
-                text-transform:capitalize;
-                color:#60a5fa;
-              ">
-
-                ${key}
-
-              </h3>
-
-              <div class="content-grid">
-
-          `;
-
-          value.forEach(item => {
-
-            const title =
-              item.title ||
-              item.name ||
-              item.course_name ||
-              'Untitled';
-
-            const thumb =
-              item.thumbnail ||
-              item.image ||
-              item.banner ||
-              'https://cdn-icons-png.flaticon.com/512/3135/3135715.png';
-
-            const itemId =
-              item.id ||
-              item.course_id ||
-              item.entity_id;
-
-            html += `
-
-              <div class="content-card"
-                   onclick="openDynamicItem('${itemId}')">
-
-                <img src="${thumb}">
-
-                <div>
-
-                  <p>${title}</p>
-
-                </div>
-
-              </div>
-
-            `;
-
-          });
-
-          html += `
-              </div>
-            </div>
-          `;
         }
 
-        // TEXT VALUES
-        else if(
-          typeof value !== "object" &&
-          value !== null &&
-          value !== ""
-        ){
-
-          html += `
-
-            <p style="margin-bottom:10px;">
-
-              <strong style="color:#93c5fd;">
-                ${key}:
-              </strong>
-
-              ${value}
-
-            </p>
-
-          `;
+        // 2. Fetch User Profile Identity
+        function loadUserProfile() {
+            fetch('https://proxy-test-three.vercel.app/api/proxy?action=profile', {
+                headers: { 'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMmNmZGVhZWEtYWI2Mi00MWY4LTlmN2QtNjU2ODMzNGUxODI2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk4ODU3MzAsImV4cCI6MTc4MjQ3NzczMH0.AeKMUiNGAeqXkMixTmyd6j6HM3gauNyafeba3fvPvWg` }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data && data.data[0]) {
+                    const profile = data.data[0];
+                    currentStudent.name = profile.name || "Student";
+                    appendSystemMessage(`Verified profile identity frame for user: ${currentStudent.name}`);
+                }
+                // Run calculations loop instantly following user data validation
+                calculateTimelineClock();
+            })
+            .catch(err => {
+                console.error(err);
+                appendSystemMessage("Profile registry check bypassed. Proceeding anonymously.");
+                calculateTimelineClock();
+            });
         }
 
-      });
+        // 3. Establish Connection to the Live MQTT Broker Node
+        function connectToLiveChat() {
+            mqttClient = new Paho.MQTT.Client(`wss://${STREAM_CONFIG.mqttHost}/mqtt`, currentStudent.id);
+            
+            mqttClient.onConnectionLost = (resp) => { 
+                if(resp.errorCode !== 0) appendSystemMessage("Channel disconnected: " + resp.errorMessage); 
+            };
+            
+            mqttClient.onMessageArrived = (msg) => {
+                try {
+                    const payload = JSON.parse(msg.payloadString);
+                    displayMessage(payload.name || payload.sender || "Student", payload.message || payload.text);
+                } catch(e) {
+                    displayMessage("Student", msg.payloadString);
+                }
+            };
 
-      html += `</div>`;
+            const handshakeOptions = {
+                onSuccess: () => {
+                    appendSystemMessage("Live chat server connection authenticated successfully.");
+                    mqttClient.subscribe(STREAM_CONFIG.publicTopic);
+                },
+                onFailure: (err) => {
+                    appendSystemMessage("Live authentication fallback error. Retrying sync block...");
+                    setTimeout(connectToLiveChat, 5000);
+                },
+                useSSL: true,
+                cleanSession: true,
+                userName: AUTH_CONFIG.userId,
+                password: AUTH_CONFIG.token
+            };
 
-      tabContent.innerHTML = html;
-
-    }
-
-    // CONTENT
-    function renderContent(data){
-
-      if(!data || !data.length){
-
-        tabContent.innerHTML = `
-          <div class="loader">
-            No Content Found
-          </div>
-        `;
-
-        return;
-      }
-
-      tabContent.innerHTML = `
-
-        <div class="content-grid">
-
-          ${data.map(item => `
-
-            <div class="content-card"
-
-                 onclick="handleContentClick(
-                   '${item.type || 'video'}',
-                   '${item.entity_id || item.id || ''}'
-                 )">
-
-              <img src="${
-                item.thumbnail ||
-                item.data?.thumbnail ||
-                'https://cdn-icons-png.flaticon.com/512/3767/3767084.png'
-              }">
-
-              <div>
-
-                <p>
-                  ${item.title || item.name || 'Untitled'}
-                </p>
-
-              </div>
-
-            </div>
-
-          `).join('')}
-
-        </div>
-
-      `;
-
-    }
-
-    // DEMO
-    function renderDemo(){
-
-      const demo = currentContent.filter(item =>
-
-        (item.title || '')
-        .toLowerCase()
-        .includes('demo')
-
-      );
-
-      renderContent(demo);
-
-    }
-
-    // TAB SWITCH
-    function switchTab(type, el){
-
-      document.querySelectorAll('.tab')
-      .forEach(tab => tab.classList.remove('active'));
-
-      el.classList.add('active');
-
-      if(type === 'overview'){
-        renderOverview();
-      }
-
-      if(type === 'content'){
-        renderContent(currentContent);
-      }
-
-      if(type === 'demo'){
-        renderDemo();
-      }
-
-    }
-
-    // OPEN DYNAMIC ITEMS
-    function openDynamicItem(id){
-
-      if(!id) return;
-
-      openCourse(id);
-
-    }
-
-    // CONTENT CLICK
-    async function handleContentClick(type, entityId){
-
-      // FOLDER
-      if(type === 'folder'){
-
-        tabContent.innerHTML = `
-          <div class="loader">
-            Opening Folder...
-          </div>
-        `;
-
-        try{
-
-          const res = await fetch(
-            `https://proxy-test-three.vercel.app/api/proxy?action=content&course_id=${currentCourse.id}&folder_id=${entityId}`
-          );
-
-          const json = await res.json();
-
-          const folderData =
-
-            json?.data?.subjects ||
-            json?.data?.content ||
-            json?.data ||
-            [];
-
-          renderContent(folderData);
-
-        }catch(err){
-
-          console.log(err);
-
+            mqttClient.connect(handshakeOptions);
         }
 
-      }
+        // 4. Send Message Handler
+        function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const messageText = input.value.trim();
+            if (!messageText) return;
 
-      // VIDEO
-      else{
+            const payload = {
+                message: messageText,
+                senderId: currentStudent.id,
+                name: currentStudent.name,
+                role: "student",
+                timestamp: Math.floor(Date.now() / 1000).toString()
+            };
 
-        try{
-
-          const res = await fetch(
-            `https://proxy-test-three.vercel.app/api/proxy?action=video&content_id=${entityId}&course_id=${currentCourse.id}`
-          );
-
-          const json = await res.json();
-
-          console.log("VIDEO API:", json);
-
-          const videoUrl =
-
-            json?.data?.url ||
-            json?.data?.video_url ||
-            json?.url ||
-            '';
-
-          if(videoUrl){
-
-            document.getElementById("videoModal")
-            .style.display = "flex";
-
-            document.getElementById("videoFrame")
-            .src = videoUrl;
-
-          }else{
-
-            alert("Video URL not found");
-
-          }
-
-        }catch(err){
-
-          console.log(err);
-
-          alert("Unable to play video");
-
+            if (isLiveActive && mqttClient && mqttClient.isConnected()) {
+                const message = new Paho.MQTT.Message(JSON.stringify(payload));
+                message.destinationName = STREAM_CONFIG.publicTopic;
+                mqttClient.send(message);
+                displayMessage("You", messageText);
+            } else {
+                // Direct local mirror logging fallback if connection is inactive
+                displayMessage(`You (${currentStudent.name})`, messageText);
+                if (!isLiveActive) {
+                    appendSystemMessage("Message logged locally. Broker node is not listening for input before live window activation.");
+                }
+            }
+            input.value = '';
         }
 
-      }
+        function displayMessage(user, text) {
+            const chatBox = document.getElementById('chat-box');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            msgDiv.innerHTML = `<div class="username">${user}</div><div>${text}</div>`;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
 
-    }
+        function appendSystemMessage(text) {
+            displayMessage("System", text);
+        }
 
-    // CLOSE VIDEO
-    function closeVideo(){
-
-      document.getElementById("videoModal")
-      .style.display = "none";
-
-      document.getElementById("videoFrame")
-      .src = "";
-
-    }
-
-    // BACK
-    function goBack(){
-
-      detailPage.style.display = "none";
-
-      landingPage.style.display = "block";
-
-      window.scrollTo(0,0);
-
-    }
-
-  </script>
-
+        // Execution Boot Initialization Triggers
+        loadUserProfile();
+        setInterval(calculateTimelineClock, 10000); // Check timeline schedule every 10 seconds
+    </script>
 </body>
 </html>
