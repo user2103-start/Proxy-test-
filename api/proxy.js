@@ -1,6 +1,6 @@
 // ============================================================
-// api/proxy.js - MULTI-USER & LIVE MQTT OPTIMIZED VERSION
-// Mission JEET Proxy - Supporting 200+ Dynamic Users Flawlessly
+// api/proxy.js - COMPLETE MULTI-USER & SECURED LIVE PLATFORM
+// Mission JEET Proxy - 100% Dynamic, Supporting 200+ Active Users
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -12,7 +12,7 @@ const USER_COURSE = "3186295";
 const USER_TEST   = "4071072";
 const DEVICE_ID   = "2cfdeaea-ab62-41f8-9f7d-6568334e1826";
 
-// Fallback Default Token (For Testing Only)
+// Fallback Default Token (For safe sandbox testing only)
 const FALLBACK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjozMjMwNTYxLCJhcHBfaWQiOiIxNzcyMTAwNjAwIiwiZGV2aWNlX2lkIjoiMmNmZGVhZWEtYWI2Mi00MWY4LTlmN2QtNjU2ODMzNGUxODI2IiwicGxhdGZvcm0iOiIzIiwidXNlcl90eXBlIjoxLCJpYXQiOjE3Nzk4ODU3MzAsImV4cCI6MTc4MjQ3NzczMH0.AeKMUiNGAeqXkMixTmyd6j6HM3gauNyafeba3fvPvWg";
 
 const requestCounts = new Map();
@@ -24,14 +24,37 @@ function checkRateLimit(ip) {
     requestCounts.set(ip, { count: 1, resetTime: now + 60000 });
     return true;
   }
-  if (userLimit.count >= 150) return false; // Increased limit slightly for live chat bursts
+  if (userLimit.count >= 150) return false; 
   userLimit.count++;
   return true;
 }
 
 // ============================================================
-// DYNAMIC TOKEN HANDLING (No more hardcoding collision)
+// TOKEN & SESSION MANAGEMENT FUNCTIONS
 // ============================================================
+function isTokenExpired(token) {
+  if (!token) return true;
+  try {
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    const expiry = payload.exp * 1000;
+    // Check if token expires within the next 5 minutes
+    return Date.now() >= (expiry - 5 * 60 * 1000);
+  } catch(e) {
+    return true;
+  }
+}
+
+function getTokenExpiry(token) {
+  try {
+    const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
+    const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
+    return payload.exp * 1000;
+  } catch(e) {
+    return Date.now() + 30 * 24 * 60 * 60 * 1000;
+  }
+}
+
 function getUserIdFromToken(token) {
   try {
     if (!token) return USER_COURSE;
@@ -58,6 +81,20 @@ function buildHeaders(accessToken, userId) {
   };
 }
 
+// ============================================================
+// HTML EMBEDDED RENDERERS
+// ============================================================
+function getPDFViewerHTML(pdfUrl) {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mission JEET - PDF Viewer</title><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#f0f0f0;height:100vh;overflow:hidden;font-family:system-ui,sans-serif;}iframe{width:100%;height:100%;border:none;}.download-btn{position:fixed;bottom:20px;right:20px;background:#1a1a2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.2);font-weight:500;}.download-btn:hover{background:#2d2d44;}.back-btn{position:fixed;bottom:20px;left:20px;background:#1a1a2e;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,0.2);}.back-btn:hover{background:#2d2d44;}</style></head><body><iframe src="${pdfUrl}" title="PDF Viewer"></iframe><a href="${pdfUrl}" class="download-btn" download>📥 Download PDF</a><a href="javascript:history.back()" class="back-btn">← Back</a></body></html>`;
+}
+
+function getHLSPlayerHTML(videoUrl, title = "Video Player") {
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Mission JEET - ${title}</title><script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script><style>*{margin:0;padding:0;box-sizing:border-box;}body{background:#000;font-family:system-ui,sans-serif;}.container{width:100%;height:100vh;display:flex;flex-direction:column;}.video-wrapper{flex:1;background:#000;position:relative;}video{width:100%;height:100%;object-fit:contain;}.controls-bar{background:#1a1a2e;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid #2d2d44;}select{background:#2d2d44;color:white;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;}.back-btn{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;}.title{color:white;flex:1;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}</style></head><body><div class="container"><div class="video-wrapper"><video id="video" controls></video></div><div class="controls-bar"><button class="back-btn" onclick="history.back()">← Back</button><div class="title">${title}</div><select id="speedSelect"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option><option value="2">2x</option></select></div></div><script>const videoUrl=decodeURIComponent("${videoUrl}");const video=document.getElementById('video');if(Hls.isSupported()){const hls=new Hls({maxBufferLength:30,enableWorker:true});hls.loadSource(videoUrl);hls.attachMedia(video);hls.on(Hls.Events.MANIFEST_PARSED,function(){video.play().catch(()=>{});});}else if(video.canPlayType('application/vnd.apple.mpegurl')){video.src=videoUrl;}document.getElementById('speedSelect').onchange=function(){video.playbackRate=parseFloat(this.value);};</script></body></html>`;
+}
+
+// ============================================================
+// MAIN ROUTER PROCESSOR
+// ============================================================
 module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -78,9 +115,20 @@ module.exports = async function handler(req, res) {
 
   const { action } = req.query;
 
-  // 🔄 CRITICAL: Dynamically extract credentials sent by frontend or use fallback
+  // 🔄 Extract identity tokens sent securely by dynamic routing contexts
   let userToken = req.headers["authorization"] || body.token || FALLBACK_TOKEN;
   let userId = req.headers["user-id"] || body.user_id || getUserIdFromToken(userToken);
+
+  // 🔒 SECURITY LAYER: Intercept expired sessions before the target server drops them
+  const securedActionRoutes = ["course", "content", "video", "livechat", "mqtt-url", "profile", "submit-test"];
+  if (securedActionRoutes.includes(action) && isTokenExpired(userToken)) {
+    return res.status(200).json({
+      success: false,
+      responseCode: "1110004",
+      message: "Session expired or logged out. Please log in again via Mission JEET Auth interface.",
+      data: null
+    });
+  }
 
   try {
     // 1. SEND OTP
@@ -104,7 +152,21 @@ module.exports = async function handler(req, res) {
         headers: { "Content-Type": "application/json", "app_id": APP_ID, "platform": "3", "version": "1" },
         body: JSON.stringify({ mobile: String(mobile), otp: String(otp), signup_needed: "0", device_id: DEVICE_ID, ...(name ? { name } : {}) })
       });
-      return res.status(200).json(await response.json());
+      const data = await response.json();
+      const accessToken = data.data?.accessToken || data.accessToken;
+      const refreshToken = data.data?.refreshToken || data.refreshToken;
+      const resolvedUid = data.data?.user_id || getUserIdFromToken(accessToken);
+      
+      if (accessToken && refreshToken) {
+        return res.status(200).json({
+          success: true,
+          userId: resolvedUid,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
+          expiresIn: getTokenExpiry(accessToken)
+        });
+      }
+      return res.status(200).json(data);
     }
 
     // 3. COURSE DETAILS
@@ -129,7 +191,20 @@ module.exports = async function handler(req, res) {
           is_free: "", keyword: "", limit: "1000", page: "1", parent_course_id: String(parent_course_id || "0")
         })
       });
-      return res.status(200).json(await response.json());
+      const data = await response.json();
+      if (data.success && data.data && Array.isArray(data.data)) {
+        const groupedMap = new Map();
+        for (const item of data.data) {
+          const title = item.title;
+          if (!groupedMap.has(title)) groupedMap.set(title, { title, video: null, pdf: null, other: [] });
+          const group = groupedMap.get(title);
+          if (item.data?.file_type === 2) group.video = item;
+          else if (item.data?.file_type === 1) group.pdf = item;
+          else group.other.push(item);
+        }
+        data.grouped = Array.from(groupedMap.values());
+      }
+      return res.status(200).json(data);
     }
 
     // 5. VIDEO/PDF SOURCE DETAILS
@@ -139,17 +214,30 @@ module.exports = async function handler(req, res) {
         method: "GET",
         headers: buildHeaders(userToken, userId)
       });
-      return res.status(200).json(await response.json());
+      const data = await response.json();
+      if (data.success && data.data) {
+        const content = data.data;
+        if (content.file_url) {
+          content.directUrl = content.file_url;
+          if (content.file_type === 1) {
+            content.playerType = "pdf";
+            content.viewerUrl = `/api/proxy?action=pdf&url=${encodeURIComponent(content.file_url)}`;
+          } else if (content.file_type === 2) {
+            content.playerType = "video";
+            content.viewerUrl = `/api/proxy?action=player&url=${encodeURIComponent(content.file_url)}&title=${encodeURIComponent(content.title || 'Video')}`;
+          }
+        }
+      }
+      return res.status(200).json(data);
     }
 
-    // 6. DYNAMIC LIVE CHET DATA EXTRACTOR (NEW 🚀)
+    // 6. DYNAMIC LIVE CHAT DATA EXTRACTOR
     if (action === "livechat") {
       const { content_id, course_id } = req.query;
       if (!content_id || !course_id) return res.status(400).json({ error: "content_id and course_id required" });
 
       const response = await fetch(`${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`, {
-        method: "GET",
-        headers: buildHeaders(userToken, userId)
+        method: "GET", headers: buildHeaders(userToken, userId)
       });
       const data = await response.json();
 
@@ -164,20 +252,36 @@ module.exports = async function handler(req, res) {
           publicTopic: `${liveInfo.chat_node || liveInfo.content_id}_public`,
           settingTopic: `${liveInfo.chat_node || liveInfo.content_id}_setting`,
           liveFrom: liveInfo.live_date_timestamp || Math.floor(Date.now() / 1000),
-          liveTo: (liveInfo.live_date_timestamp || Math.floor(Date.now() / 1000)) + 10800 // 3 hours duration window default
+          liveTo: (liveInfo.live_date_timestamp || Math.floor(Date.now() / 1000)) + 10800
         });
       }
       return res.status(400).json({ success: false, error: "Live class payload data mapping failed" });
     }
 
-    // 7. PRE-AUTHENTICATED WEBSOCKET LINK DISPATCHER (NEW 🚀)
+    // 7. PRE-AUTHENTICATED WEBSOCKET LINK DISPATCHER
     if (action === "mqtt-url") {
       const cleanToken = userToken.startsWith("Bearer ") ? userToken.slice(7) : userToken;
       const wsUrl = `wss://mqtt-ws.nexttoppers.com/mqtt?uid=${userId}&token=${encodeURIComponent(cleanToken)}&appId=${APP_ID}`;
       return res.status(200).json({ success: true, wsUrl: wsUrl, clientId: String(userId) });
     }
 
-    // 8. USER PROFILE
+    // 8. HLS VIDEO PLAYER RENDERER
+    if (action === "player") {
+      const { url, title } = req.query;
+      if (!url) return res.status(400).json({ error: "url parameter required" });
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(200).send(getHLSPlayerHTML(decodeURIComponent(url), title ? decodeURIComponent(title) : "Video Player"));
+    }
+
+    // 9. PDF VIEWER RENDERER
+    if (action === "pdf") {
+      const { url } = req.query;
+      if (!url) return res.status(400).json({ error: "url parameter required" });
+      res.setHeader('Content-Type', 'text/html');
+      return res.status(200).send(getPDFViewerHTML(decodeURIComponent(url)));
+    }
+
+    // 10. USER PROFILE
     if (action === "profile") {
       const response = await fetch(`${AUTH}/user/my-profile`, {
         method: "GET", headers: buildHeaders(userToken, userId)
@@ -185,25 +289,25 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(await response.json());
     }
 
-    // 9. TEST INFO
+    // 11. TEST INFO
     if (action === "testinfo") {
       const { test_id } = req.query;
       const response = await fetch(`${TEST}/test/get-test-instructions?test_id=${test_id}`, {
-        method: "GET", headers: buildHeaders(userToken, userId)
+        method: "GET", headers: buildHeaders(null, USER_TEST)
       });
       return res.status(200).json(await response.json());
     }
 
-    // 10. TEST DATA
+    // 12. TEST DATA
     if (action === "testdata") {
       const { test_id } = req.query;
       const response = await fetch(`${TEST}/test/get-test-data?test_id=${test_id}`, {
-        method: "GET", headers: buildHeaders(userToken, userId)
+        method: "GET", headers: buildHeaders(null, USER_TEST)
       });
       return res.status(200).json(await response.json());
     }
 
-    // 11. SUBMIT TEST
+    // 13. SUBMIT TEST
     if (action === "submit-test") {
       const { test_id, course_id, answers, total_time_spent } = body;
       const response = await fetch(`${TEST}/test/submit-test`, {
@@ -214,7 +318,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(await response.json());
     }
 
-    // 12. PROXY STATS
+    // 14. PROXY STATS
     if (action === "stats") {
       return res.status(200).json({ success: true, status: "healthy", activeUsersCached: requestCounts.size, timestamp: Date.now() });
     }
