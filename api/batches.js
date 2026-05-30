@@ -1,3 +1,6 @@
+// File: api/batches.js
+// ✅ CORS Enabled for ALL origins
+
 const courses = [
   {
     id: 184,
@@ -38,19 +41,45 @@ const courses = [
 ];
 
 export default function handler(req, res) {
+  // ✅ CORS Headers - Allow EVERYONE
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight request for 24 hours
   
+  // ✅ Handle preflight OPTIONS request
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  // Get query parameters
   const { id } = req.query;
   
+  // If ID is provided, return single course
   if (id) {
     const course = courses.find(c => c.id == id);
     if (course) {
-      res.status(200).json({ success: true, data: course });
+      res.status(200).json({ 
+        success: true, 
+        data: course,
+        message: "Course found"
+      });
     } else {
-      res.status(404).json({ success: false, message: "Course not found" });
+      res.status(404).json({ 
+        success: false, 
+        message: "Course not found",
+        data: null
+      });
     }
-  } else {
-    res.status(200).json({ success: true, data: courses, count: courses.length });
+  } 
+  // Otherwise return all courses
+  else {
+    res.status(200).json({ 
+      success: true, 
+      data: courses, 
+      count: courses.length,
+      message: "Courses fetched successfully"
+    });
   }
 }
