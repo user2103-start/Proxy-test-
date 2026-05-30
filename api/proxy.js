@@ -38,7 +38,6 @@ function isTokenExpired(token) {
     const cleanToken = token.startsWith("Bearer ") ? token.slice(7) : token;
     const payload = JSON.parse(Buffer.from(cleanToken.split('.')[1], 'base64').toString());
     const expiry = payload.exp * 1000;
-    // Check if token expires within the next 5 minutes
     return Date.now() >= (expiry - 5 * 60 * 1000);
   } catch(e) {
     return true;
@@ -93,12 +92,22 @@ function getHLSPlayerHTML(videoUrl, title = "Video Player") {
 }
 
 // ============================================================
+// CORS HANDLER - ALL ORIGINS ALLOWED
+// ============================================================
+function setCorsHeaders(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, User-Id, X-Requested-With, Accept, Origin");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+  res.setHeader("Access-Control-Max-Age", "86400");
+}
+
+// ============================================================
 // MAIN ROUTER PROCESSOR
 // ============================================================
 module.exports = async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, User-Id");
+  // ✅ CORS - Sabke liye allow
+  setCorsHeaders(res);
   
   if (req.method === "OPTIONS") return res.status(200).end();
   
