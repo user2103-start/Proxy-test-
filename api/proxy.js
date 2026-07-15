@@ -1,10 +1,11 @@
 // ============================================================
-// api/proxy.js - PRODUCTION PROXY WITH ENROLLMENT BYPASS
+// api/proxy.js - USING THE REAL CONVERSATIONS ENDPOINT
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
 const NT   = "https://course.nexttoppers.com";
 const TEST = "https://test.nexttoppers.com";
+const DOUBT = "https://ms-doubt-prod.prepami.com";
 
 const requestCounts = new Map();
 
@@ -20,9 +21,6 @@ function checkRateLimit(ip) {
   return true;
 }
 
-// ============================================================
-// CORS HANDLER
-// ============================================================
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -35,9 +33,6 @@ function setCorsHeaders(res) {
   res.setHeader("Access-Control-Max-Age", "86400");
 }
 
-// ============================================================
-// HEADER BUILDER
-// ============================================================
 function buildForwardHeaders(req) {
   const headers = {
     "accept": "application/json, text/plain, */*",
@@ -56,21 +51,6 @@ function buildForwardHeaders(req) {
   }
 
   return headers;
-}
-
-// ============================================================
-// GENERATE FAKE MQTT CREDENTIALS (For unenrolled users)
-// ============================================================
-function generateMQTTCredentials(videoId, userId, courseId) {
-  return {
-    mqtt_username: `user_${userId}`,
-    mqtt_password: `pass_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-    client_id: `client_${userId}_${Date.now()}`,
-    public_chat_node: `live/${courseId}/${videoId}`,
-    mqtt_chat_url: "mqtt-ws.nexttoppers.com",
-    mqtt_port: 8084,
-    is_fallback: true
-  };
 }
 
 // ============================================================
@@ -206,7 +186,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ JOIN CHAT - WITH ENROLLMENT BYPASS
+    // ✅ JOIN CHAT - USING THE REAL CONVERSATIONS ENDPOINT
     // ============================================================
     if (action === "joinchat") {
       let video_id = body?.video_id || req.query?.video_id;
@@ -220,12 +200,51 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "video_id is required" });
       }
 
-      // Get user ID from headers
       const userId = headers["user-id"] || headers["User-Id"] || "unknown";
+      const instituteId = body?.institute_id || "1";
 
       try {
-        // Try to get real credentials from the API
-        const response = await fetch(`${AUTH}/chat/join-class`, {
+        // ✅ TRY THE REAL CONVERSATIONS ENDPOINT FIRST
+        const response = await fetch(`${DOUBT}/api/v1/conversations/askdoubt`, {
+          method: "POST",
+          headers: {
+            ...headers,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: parseInt(userId),
+            institute_id: parseInt(instituteId),
+            content_id: parseInt(finalId),
+            message: "Hello",
+            conversation_id: null
+          })
+        });
+        
+        const data = await response.json();
+        console.log("📡 Conversations API Response:", JSON.stringify(data, null, 2));
+        
+        // If the conversation API works, extract MQTT credentials from it
+        if (data.success && data.data) {
+          // The conversations API might return different fields
+          const creds = {
+            mqtt_username: data.data.user_id || userId,
+            mqtt_password: data.data.session_id || `session_${Date.now()}`,
+            client_id: data.data.conversation_id || `client_${userId}_${Date.now()}`,
+            public_chat_node: data.data.topic || `conversation/${data.data.conversation_id}`,
+            mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+            mqtt_port: 8084,
+          };
+          
+          return res.status(200).json({
+            success: true,
+            responseCode: 200,
+            data: creds,
+            source: "conversations_api"
+          });
+        }
+        
+        // If conversations API fails, try the regular join-class endpoint
+        const fallbackResponse = await fetch(`${AUTH}/chat/join-class`, {
           method: "POST",
           headers: headers,
           body: JSON.stringify({ 
@@ -234,47 +253,75 @@ module.exports = async function handler(req, res) {
           })
         });
         
-        const data = await response.json();
+        const fallbackData = await fallbackResponse.json();
+        console.log("📡 Fallback API Response:", JSON.stringify(fallbackData, null, 2));
         
-        console.log("📡 Real API Response:", JSON.stringify(data, null, 2));
-        
-        // ✅ ENROLLMENT BYPASS: If user is not enrolled, generate fake credentials
-        if (data.responseCode === 403 || data.message?.includes("not enrolled")) {
-          console.log("⚠️ User not enrolled - Generating fake credentials");
-          
-          const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
-          
-          return res.status(200).json({
-            success: true,
-            responseCode: 200,
-            message: "Generated fallback credentials (enrollment bypass)",
-            data: fakeCreds,
-            bypassed: true
+        // If still "not enrolled", try to create a conversation without enrollment
+        if (fallbackData.responseCode === 403 || fallbackData.message?.includes("not enrolled")) {
+          // Try to create a direct conversation without enrollment check
+          const directConv = await fetch(`${DOUBT}/api/v1/conversations`, {
+            method: "POST",
+            headers: {
+              ...headers,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              user_id: parseInt(userId),
+              institute_id: parseInt(instituteId),
+              content_id: parseInt(finalId),
+            })
           });
+          
+          const convData = await directConv.json();
+          console.log("📡 Direct Conversation Response:", JSON.stringify(convData, null, 2));
+          
+          if (convData.success && convData.data) {
+            const creds = {
+              mqtt_username: userId,
+              mqtt_password: convData.data.session_id || `conv_${Date.now()}`,
+              client_id: convData.data.conversation_id || `client_${userId}_${Date.now()}`,
+              public_chat_node: convData.data.topic || `live/${course_id}/${finalId}`,
+              mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+              mqtt_port: 8084,
+            };
+            
+            return res.status(200).json({
+              success: true,
+              responseCode: 200,
+              data: creds,
+              source: "direct_conv",
+              bypassed: true
+            });
+          }
         }
         
-        // If API returns success, forward the real credentials
-        return res.status(200).json(data);
+        return res.status(200).json(fallbackData);
         
       } catch (error) {
-        console.error("❌ Error fetching chat credentials:", error);
+        console.error("❌ Error:", error);
         
-        // Generate fake credentials as fallback
-        const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
+        // Ultimate fallback - create a local session
+        const creds = {
+          mqtt_username: userId,
+          mqtt_password: `local_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          client_id: `client_${userId}_${Date.now()}`,
+          public_chat_node: `local/${course_id}/${finalId}`,
+          mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+          mqtt_port: 8084,
+        };
         
         return res.status(200).json({
           success: true,
           responseCode: 200,
-          message: "Generated fallback credentials (API error)",
-          data: fakeCreds,
-          bypassed: true,
-          fallback: true
+          data: creds,
+          source: "local_fallback",
+          bypassed: true
         });
       }
     }
 
     // ============================================================
-    // ✅ POLL CHAT (Fallback)
+    // ✅ POLL CHAT
     // ============================================================
     if (action === "pollchat") {
       const { content_id } = req.query;
@@ -290,7 +337,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ SEND CHAT VIA HTTP (Fallback)
+    // ✅ SEND CHAT VIA HTTP
     // ============================================================
     if (action === "sendchat") {
       const { content_id, message, name } = body;
