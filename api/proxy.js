@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - FINAL FIX (Proper ID Forwarding)
+// api/proxy.js - FINAL FIX (parent_course_id added)
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -70,9 +70,8 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(await data.json());
     }
 
-    // 4. CONTENT
+    // 4. CONTENT (FIXED: Added parent_course_id)
     if (action === "content") {
-      // ✅ Ensure we use the correct ID from the query
       const course_id = req.query.course_id || "3186295";
       const folder_id = req.query.folder_id || "0";
       
@@ -81,7 +80,8 @@ module.exports = async function handler(req, res) {
         headers, 
         body: JSON.stringify({ 
             course_id: String(course_id), 
-            folder_id: String(folder_id), 
+            folder_id: String(folder_id),
+            parent_course_id: String(course_id), // ✅ FIX: Must match course_id
             limit: "1000", 
             page: "1" 
         })
