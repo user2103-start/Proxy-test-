@@ -21,12 +21,17 @@ function checkRateLimit(ip) {
 }
 
 // ============================================================
-// CORS HANDLER
+// CORS HANDLER - FIXED
 // ============================================================
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, User-Id, X-Requested-With, Accept, Origin, App-Id, Platform, Version, Device-Id");
+  // ✅ ADDED ALL POSSIBLE HEADERS THE FRONTEND MIGHT SEND
+  res.setHeader("Access-Control-Allow-Headers", 
+    "Content-Type, Authorization, User-Id, X-Requested-With, Accept, Origin, " +
+    "App-Id, Platform, Version, Device-Id, device_id, app_id, user-id, " +
+    "x-app-id, x-platform, x-version, x-device-id"
+  );
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Max-Age", "86400");
 }
@@ -46,7 +51,7 @@ function buildForwardHeaders(req) {
   // ✅ Forward EXACT headers from the frontend — do NOT overwrite!
   const forwardKeys = ["authorization", "user-id", "app_id", "platform", "version", "device_id"];
   for (const key of forwardKeys) {
-    const value = req.headers[key.toLowerCase()];
+    const value = req.headers[key.toLowerCase()] || req.headers[key];
     if (value) {
       headers[key] = value;
     }
@@ -61,7 +66,10 @@ function buildForwardHeaders(req) {
 module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    // ✅ Preflight request - just return 200
+    return res.status(200).end();
+  }
   
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
   if (!checkRateLimit(clientIp)) {
@@ -264,6 +272,7 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ success: false, error: "Invalid action routing query options" });
 
   } catch (error) {
+    console.error("❌ Proxy Error:", error);
     return res.status(500).json({ success: false, error: error.message || "Internal server crash" });
   }
 };
