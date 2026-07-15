@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - PRODUCTION PROXY (CORS FIXED)
+// api/proxy.js - PRODUCTION PROXY (FINAL CORS FIX)
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -9,7 +9,8 @@ const TEST = "https://test.nexttoppers.com";
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, User-Id, X-Requested-With, Accept, Origin, App-Id, Platform, Version, Device-Id, device_id");
+  // ✅ Allow ALL headers (including app_id, device_id, platform, etc.)
+  res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Max-Age", "86400");
 }
