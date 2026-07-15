@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - PRODUCTION PROXY FOR 500+ USERS
+// api/proxy.js - PRODUCTION PROXY FOR 500+ USERS (FIXED)
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -32,7 +32,7 @@ function setCorsHeaders(res) {
 }
 
 // ============================================================
-// HEADER BUILDER - Uses EXACTLY what the frontend sends
+// HEADER BUILDER - Uses EXACTLY what the frontend sends (FIXED)
 // ============================================================
 function buildForwardHeaders(req) {
   const headers = {
@@ -43,14 +43,60 @@ function buildForwardHeaders(req) {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   };
 
-  // ✅ Forward EXACT headers from the frontend — do NOT overwrite!
-  const forwardKeys = ["authorization", "user-id", "app_id", "platform", "version", "device_id"];
-  for (const key of forwardKeys) {
-    const value = req.headers[key.toLowerCase()];
-    if (value) {
-      headers[key] = value;
-    }
+  // ✅ Fix: Handle both lowercase and uppercase header names
+  const rawHeaders = req.headers;
+  
+  // Extract authorization (Vercel converts it to lowercase)
+  if (rawHeaders.authorization) {
+    headers["authorization"] = rawHeaders.authorization;
+  } else if (rawHeaders.Authorization) {
+    headers["authorization"] = rawHeaders.Authorization;
   }
+
+  // Extract user-id
+  if (rawHeaders["user-id"]) {
+    headers["user-id"] = rawHeaders["user-id"];
+  } else if (rawHeaders["User-Id"]) {
+    headers["user-id"] = rawHeaders["User-Id"];
+  }
+
+  // Extract app_id
+  if (rawHeaders["app_id"]) {
+    headers["app_id"] = rawHeaders["app_id"];
+  } else if (rawHeaders["App_Id"]) {
+    headers["app_id"] = rawHeaders["App_Id"];
+  }
+
+  // Extract platform
+  if (rawHeaders["platform"]) {
+    headers["platform"] = rawHeaders["platform"];
+  } else if (rawHeaders["Platform"]) {
+    headers["platform"] = rawHeaders["Platform"];
+  }
+
+  // Extract version
+  if (rawHeaders["version"]) {
+    headers["version"] = rawHeaders["version"];
+  } else if (rawHeaders["Version"]) {
+    headers["version"] = rawHeaders["Version"];
+  }
+
+  // Extract device_id
+  if (rawHeaders["device_id"]) {
+    headers["device_id"] = rawHeaders["device_id"];
+  } else if (rawHeaders["Device_Id"]) {
+    headers["device_id"] = rawHeaders["Device_Id"];
+  }
+
+  // ✅ LOGGING: See what headers arrived at the proxy
+  console.log("🔹 Headers received at proxy:", {
+    authorization: headers["authorization"] ? "✅ Present" : "❌ Missing",
+    "user-id": headers["user-id"] || "❌ Missing",
+    app_id: headers["app_id"] || "❌ Missing",
+    platform: headers["platform"] || "❌ Missing",
+    version: headers["version"] || "❌ Missing",
+    device_id: headers["device_id"] || "❌ Missing"
+  });
 
   return headers;
 }
@@ -79,6 +125,13 @@ module.exports = async function handler(req, res) {
   // ✅ Build headers using ONLY what the frontend sent
   const headers = buildForwardHeaders(req);
 
+  // ✅ Fallback to default values if headers are missing
+  const appId = headers["app_id"] || "1772100600";
+  const platform = headers["platform"] || "3";
+  const version = headers["version"] || "1";
+  const deviceId = headers["device_id"] || "";
+  const userId = headers["user-id"] || body.user_id || "";
+
   try {
     // 1. SEND OTP
     if (action === "sendotp") {
@@ -88,11 +141,11 @@ module.exports = async function handler(req, res) {
         method: "POST",
         headers: { 
           "Content-Type": "application/json", 
-          "app_id": headers["app_id"] || "1772100600", 
-          "platform": headers["platform"] || "3", 
-          "version": headers["version"] || "1" 
+          "app_id": appId, 
+          "platform": platform, 
+          "version": version 
         },
-        body: JSON.stringify({ mobile: String(mobile), device_id: headers["device_id"] || "", mobile_otp_login: 1, otp: "" })
+        body: JSON.stringify({ mobile: String(mobile), device_id: deviceId, mobile_otp_login: 1, otp: "" })
       });
       return res.status(200).json(await response.json());
     }
@@ -105,11 +158,11 @@ module.exports = async function handler(req, res) {
         method: "POST",
         headers: { 
           "Content-Type": "application/json", 
-          "app_id": headers["app_id"] || "1772100600", 
-          "platform": headers["platform"] || "3", 
-          "version": headers["version"] || "1" 
+          "app_id": appId, 
+          "platform": platform, 
+          "version": version 
         },
-        body: JSON.stringify({ mobile: String(mobile), otp: String(otp), signup_needed: "0", device_id: headers["device_id"] || "", ...(name ? { name } : {}) })
+        body: JSON.stringify({ mobile: String(mobile), otp: String(otp), signup_needed: "0", device_id: deviceId, ...(name ? { name } : {}) })
       });
       return res.status(200).json(await response.json());
     }
@@ -146,8 +199,7 @@ module.exports = async function handler(req, res) {
         method: "GET",
         headers: headers
       });
-      const data = await response.json();
-      return res.status(200).json(data);
+      return res.status(200).json(await response.json());
     }
 
     // 6. USER PROFILE
@@ -182,7 +234,7 @@ module.exports = async function handler(req, res) {
       const response = await fetch(`${TEST}/test/submit-test`, {
         method: "POST",
         headers: headers,
-        body: JSON.stringify({ test_id: String(test_id), course_id: String(course_id || ""), user_id: headers["user-id"], answers, total_time_spent: total_time_spent || 0 })
+        body: JSON.stringify({ test_id: String(test_id), course_id: String(course_id || ""), user_id: userId, answers, total_time_spent: total_time_spent || 0 })
       });
       return res.status(200).json(await response.json());
     }
