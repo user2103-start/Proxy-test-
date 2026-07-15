@@ -21,7 +21,7 @@ function checkRateLimit(ip) {
 }
 
 // ============================================================
-// CORS HANDLER - FIXED
+// CORS HANDLER
 // ============================================================
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -36,7 +36,7 @@ function setCorsHeaders(res) {
 }
 
 // ============================================================
-// HEADER BUILDER - Uses EXACTLY what the frontend sends
+// HEADER BUILDER
 // ============================================================
 function buildForwardHeaders(req) {
   const headers = {
@@ -47,7 +47,6 @@ function buildForwardHeaders(req) {
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   };
 
-  // ✅ Forward EXACT headers from the frontend — do NOT overwrite!
   const forwardKeys = ["authorization", "user-id", "app_id", "platform", "version", "device_id"];
   for (const key of forwardKeys) {
     const value = req.headers[key.toLowerCase()] || req.headers[key];
@@ -81,8 +80,6 @@ module.exports = async function handler(req, res) {
   body = Object.assign({}, req.query, body);
 
   const { action } = req.query;
-
-  // ✅ Build headers using ONLY what the frontend sent
   const headers = buildForwardHeaders(req);
 
   try {
@@ -194,25 +191,28 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ JOIN CHAT (FIXED - Reads from body AND query)
+    // ✅ JOIN CHAT - FIXED: Uses video_id (NOT content_id)
     // ============================================================
     if (action === "joinchat") {
-      // Try to get content_id from body first, then query
+      // The API expects "video_id" - NOT "content_id"
+      let video_id = body?.video_id || req.query?.video_id;
       let content_id = body?.content_id || req.query?.content_id;
+      
+      // Use video_id if present, otherwise fallback to content_id
+      let finalId = video_id || content_id;
       let course_id = body?.course_id || req.query?.course_id || "0";
       
-      console.log("📡 JoinChat Request:", { content_id, course_id, body, query: req.query });
+      console.log("📡 JoinChat Request:", { video_id, content_id, finalId, course_id });
       
-      if (!content_id) {
-        console.error("❌ Missing content_id in request");
-        return res.status(400).json({ success: false, error: "content_id is required" });
+      if (!finalId) {
+        return res.status(400).json({ success: false, error: "video_id is required" });
       }
 
       const response = await fetch(`${AUTH}/chat/join-class`, {
         method: "POST",
         headers: headers,
         body: JSON.stringify({ 
-          content_id: String(content_id), 
+          video_id: String(finalId), 
           course_id: String(course_id) 
         })
       });
@@ -225,7 +225,7 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ POLL CHAT (Fallback for when MQTT fails)
+    // ✅ POLL CHAT (Fallback)
     // ============================================================
     if (action === "pollchat") {
       const { content_id } = req.query;
@@ -269,7 +269,7 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ success: true, status: "healthy", activeUsersCached: requestCounts.size, timestamp: Date.now() });
     }
 
-    return res.status(400).json({ success: false, error: "Invalid action routing query options" });
+    return res.status(400).json({ success: false, error: "Invalid action" });
 
   } catch (error) {
     console.error("❌ Proxy Error:", error);
