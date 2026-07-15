@@ -26,7 +26,6 @@ function checkRateLimit(ip) {
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  // ✅ ADDED ALL POSSIBLE HEADERS THE FRONTEND MIGHT SEND
   res.setHeader("Access-Control-Allow-Headers", 
     "Content-Type, Authorization, User-Id, X-Requested-With, Accept, Origin, " +
     "App-Id, Platform, Version, Device-Id, device_id, app_id, user-id, " +
@@ -67,7 +66,6 @@ module.exports = async function handler(req, res) {
   setCorsHeaders(res);
   
   if (req.method === "OPTIONS") {
-    // ✅ Preflight request - just return 200
     return res.status(200).end();
   }
   
@@ -196,12 +194,17 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ JOIN CHAT (Required for Live Chat)
+    // ✅ JOIN CHAT (FIXED - Reads from body AND query)
     // ============================================================
     if (action === "joinchat") {
-      const { content_id, course_id } = req.query || req.body || {};
+      // Try to get content_id from body first, then query
+      let content_id = body?.content_id || req.query?.content_id;
+      let course_id = body?.course_id || req.query?.course_id || "0";
+      
+      console.log("📡 JoinChat Request:", { content_id, course_id, body, query: req.query });
       
       if (!content_id) {
+        console.error("❌ Missing content_id in request");
         return res.status(400).json({ success: false, error: "content_id is required" });
       }
 
@@ -210,13 +213,12 @@ module.exports = async function handler(req, res) {
         headers: headers,
         body: JSON.stringify({ 
           content_id: String(content_id), 
-          course_id: String(course_id || "0") 
+          course_id: String(course_id) 
         })
       });
       
       const data = await response.json();
       
-      // ✅ LOG THE RESPONSE TO DEBUG (will show in Vercel logs)
       console.log("📡 JoinChat Response:", JSON.stringify(data, null, 2));
       
       return res.status(200).json(data);
@@ -234,7 +236,6 @@ module.exports = async function handler(req, res) {
         });
         return res.status(200).json(await response.json());
       } catch(e) {
-        // If poll endpoint doesn't exist, return empty messages
         return res.status(200).json({ success: true, messages: [] });
       }
     }
@@ -259,7 +260,6 @@ module.exports = async function handler(req, res) {
         });
         return res.status(200).json(await response.json());
       } catch(e) {
-        // If send endpoint doesn't exist, return success (silent fail)
         return res.status(200).json({ success: true, message: "Message sent (fallback)" });
       }
     }
