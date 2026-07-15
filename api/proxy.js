@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - PRODUCTION PROXY (FINAL CORS FIX)
+// api/proxy.js - FINAL FIX (Proper ID Forwarding)
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -9,7 +9,6 @@ const TEST = "https://test.nexttoppers.com";
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  // ✅ Allow ALL headers (including app_id, device_id, platform, etc.)
   res.setHeader("Access-Control-Allow-Headers", "*");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   res.setHeader("Access-Control-Max-Age", "86400");
@@ -73,8 +72,19 @@ module.exports = async function handler(req, res) {
 
     // 4. CONTENT
     if (action === "content") {
+      // ✅ Ensure we use the correct ID from the query
+      const course_id = req.query.course_id || "3186295";
+      const folder_id = req.query.folder_id || "0";
+      
       const data = await fetch(`${NT}/course/all-content`, {
-        method: "POST", headers, body: JSON.stringify({ course_id: String(req.query.course_id), folder_id: String(req.query.folder_id || "0"), limit: "1000", page: "1" })
+        method: "POST", 
+        headers, 
+        body: JSON.stringify({ 
+            course_id: String(course_id), 
+            folder_id: String(folder_id), 
+            limit: "1000", 
+            page: "1" 
+        })
       });
       return res.status(200).json(await data.json());
     }
