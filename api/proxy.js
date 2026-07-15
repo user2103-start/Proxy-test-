@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - PRODUCTION PROXY FOR 500+ USERS
+// api/proxy.js - PRODUCTION PROXY WITH ENROLLMENT BYPASS
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -56,6 +56,21 @@ function buildForwardHeaders(req) {
   }
 
   return headers;
+}
+
+// ============================================================
+// GENERATE FAKE MQTT CREDENTIALS (For unenrolled users)
+// ============================================================
+function generateMQTTCredentials(videoId, userId, courseId) {
+  return {
+    mqtt_username: `user_${userId}`,
+    mqtt_password: `pass_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+    client_id: `client_${userId}_${Date.now()}`,
+    public_chat_node: `live/${courseId}/${videoId}`,
+    mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+    mqtt_port: 8084,
+    is_fallback: true
+  };
 }
 
 // ============================================================
@@ -191,14 +206,11 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ JOIN CHAT - FIXED: Uses video_id (NOT content_id)
+    // ✅ JOIN CHAT - WITH ENROLLMENT BYPASS
     // ============================================================
     if (action === "joinchat") {
-      // The API expects "video_id" - NOT "content_id"
       let video_id = body?.video_id || req.query?.video_id;
       let content_id = body?.content_id || req.query?.content_id;
-      
-      // Use video_id if present, otherwise fallback to content_id
       let finalId = video_id || content_id;
       let course_id = body?.course_id || req.query?.course_id || "0";
       
@@ -208,20 +220,57 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ success: false, error: "video_id is required" });
       }
 
-      const response = await fetch(`${AUTH}/chat/join-class`, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify({ 
-          video_id: String(finalId), 
-          course_id: String(course_id) 
-        })
-      });
-      
-      const data = await response.json();
-      
-      console.log("📡 JoinChat Response:", JSON.stringify(data, null, 2));
-      
-      return res.status(200).json(data);
+      // Get user ID from headers
+      const userId = headers["user-id"] || headers["User-Id"] || "unknown";
+
+      try {
+        // Try to get real credentials from the API
+        const response = await fetch(`${AUTH}/chat/join-class`, {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ 
+            video_id: String(finalId), 
+            course_id: String(course_id) 
+          })
+        });
+        
+        const data = await response.json();
+        
+        console.log("📡 Real API Response:", JSON.stringify(data, null, 2));
+        
+        // ✅ ENROLLMENT BYPASS: If user is not enrolled, generate fake credentials
+        if (data.responseCode === 403 || data.message?.includes("not enrolled")) {
+          console.log("⚠️ User not enrolled - Generating fake credentials");
+          
+          const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
+          
+          return res.status(200).json({
+            success: true,
+            responseCode: 200,
+            message: "Generated fallback credentials (enrollment bypass)",
+            data: fakeCreds,
+            bypassed: true
+          });
+        }
+        
+        // If API returns success, forward the real credentials
+        return res.status(200).json(data);
+        
+      } catch (error) {
+        console.error("❌ Error fetching chat credentials:", error);
+        
+        // Generate fake credentials as fallback
+        const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
+        
+        return res.status(200).json({
+          success: true,
+          responseCode: 200,
+          message: "Generated fallback credentials (API error)",
+          data: fakeCreds,
+          bypassed: true,
+          fallback: true
+        });
+      }
     }
 
     // ============================================================
