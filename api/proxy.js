@@ -1,5 +1,5 @@
 // ============================================================
-// api/proxy.js - COMPLETE PROXY WITH ENROLLMENT BYPASS
+// api/proxy.js - WITH FAKE ENROLLMENT
 // ============================================================
 
 const AUTH = "https://auth.nexttoppers.com";
@@ -53,26 +53,62 @@ function buildForwardHeaders(req) {
 }
 
 // ============================================================
-// GENERATE WORKING MQTT CREDENTIALS
+// FAKE ENROLLMENT - Makes the API think user is enrolled
 // ============================================================
-function generateMQTTCredentials(videoId, userId, courseId) {
-  // Generate a unique session ID
-  const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-  
+function createFakeEnrollmentResponse(courseId, userId) {
   return {
-    mqtt_username: String(userId),
-    mqtt_password: sessionId,
-    client_id: `client_${userId}_${Date.now()}`,
-    public_chat_node: `live/${courseId}/${videoId}`,
-    mqtt_chat_url: "mqtt-ws.nexttoppers.com",
-    mqtt_port: 8084,
-    is_fallback: true,
-    // Add these to make it look more real
-    session_id: sessionId,
-    user_id: String(userId),
-    content_id: String(videoId),
-    course_id: String(courseId)
+    success: true,
+    responseCode: 1001,
+    message: "Success",
+    data: {
+      is_enrolled: true,
+      enrollment_id: `fake_enroll_${Date.now()}`,
+      course_id: String(courseId),
+      user_id: String(userId),
+      enrolled_at: new Date().toISOString(),
+      status: "active",
+      // Add some fake enrollment details
+      enrollment_status: "active",
+      access_type: "full",
+      valid_until: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
+    }
   };
+}
+
+// ============================================================
+// INTERCEPT AND MODIFY RESPONSES
+// ============================================================
+async function fetchWithIntercept(url, options, interceptType) {
+  const response = await fetch(url, options);
+  const data = await response.json();
+  
+  console.log(`📡 Original ${interceptType} Response:`, JSON.stringify(data, null, 2));
+  
+  // If it's an enrollment check and user is not enrolled, fake it
+  if (interceptType === "enrollment_check" || interceptType === "join_chat") {
+    if (data.responseCode === 403 || data.message?.includes("not enrolled")) {
+      console.log("🔄 Intercepting: Faking enrollment...");
+      
+      // Extract course_id and user_id from the request
+      let courseId = "185"; // Default
+      let userId = "3230561"; // Default
+      
+      try {
+        const body = JSON.parse(options.body || '{}');
+        courseId = body.course_id || body.video_id || "185";
+        userId = body.user_id || "3230561";
+      } catch(e) {}
+      
+      // Return fake enrollment response
+      return {
+        response: response,
+        data: createFakeEnrollmentResponse(courseId, userId),
+        intercepted: true
+      };
+    }
+  }
+  
+  return { response, data, intercepted: false };
 }
 
 // ============================================================
@@ -208,7 +244,57 @@ module.exports = async function handler(req, res) {
     }
 
     // ============================================================
-    // ✅ JOIN CHAT - WITH ENROLLMENT BYPASS
+    // ✅ FAKE ENROLLMENT INTERCEPTOR
+    // ============================================================
+    
+    // 10. CHECK ENROLLMENT - Intercept and fake it
+    if (action === "check-enrollment") {
+      const { course_id, content_id } = req.query;
+      const userId = headers["user-id"] || headers["User-Id"] || "3230561";
+      
+      console.log("📡 Fake Enrollment Check:", { course_id, content_id, userId });
+      
+      // Always return enrolled
+      return res.status(200).json({
+        success: true,
+        responseCode: 1001,
+        message: "User is enrolled",
+        data: {
+          is_enrolled: true,
+          course_id: String(course_id || "185"),
+          user_id: String(userId),
+          enrolled_at: new Date().toISOString(),
+          access_type: "full"
+        },
+        faked: true
+      });
+    }
+
+    // 11. ENROLL USER - Fake the enrollment
+    if (action === "enroll") {
+      const { course_id } = body;
+      const userId = headers["user-id"] || headers["User-Id"] || "3230561";
+      
+      console.log("📡 Fake Enrollment:", { course_id, userId });
+      
+      // Return fake enrollment success
+      return res.status(200).json({
+        success: true,
+        responseCode: 1001,
+        message: "Enrollment successful (fake)",
+        data: {
+          enrollment_id: `fake_${Date.now()}`,
+          course_id: String(course_id || "185"),
+          user_id: String(userId),
+          status: "active",
+          enrolled_at: new Date().toISOString()
+        },
+        faked: true
+      });
+    }
+
+    // ============================================================
+    // ✅ JOIN CHAT - WITH FAKE ENROLLMENT
     // ============================================================
     if (action === "joinchat") {
       let video_id = body?.video_id || req.query?.video_id;
@@ -225,10 +311,15 @@ module.exports = async function handler(req, res) {
       const userId = headers["user-id"] || headers["User-Id"] || "unknown";
 
       try {
-        // FIRST: Try to get real credentials
+        // Try the real API with fake enrollment headers
         const response = await fetch(`${AUTH}/chat/join-class`, {
           method: "POST",
-          headers: headers,
+          headers: {
+            ...headers,
+            // Add fake enrollment header to trick the API
+            "X-Fake-Enrolled": "true",
+            "X-Enrollment-Status": "active"
+          },
           body: JSON.stringify({ 
             video_id: String(finalId), 
             course_id: String(course_id) 
@@ -240,17 +331,45 @@ module.exports = async function handler(req, res) {
         
         // If user is enrolled, return real credentials
         if (data.success && data.data && data.data.mqtt_password) {
-          console.log("✅ User is enrolled! Returning real credentials.");
+          console.log("✅ Got real MQTT credentials!");
           return res.status(200).json(data);
         }
         
-        // If not enrolled, generate fake credentials
-        console.log("⚠️ User not enrolled - Generating fallback credentials");
-        const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
+        // If not enrolled, try to fake it by making the API think we're enrolled
+        console.log("⚠️ Not enrolled - Attempting fake enrollment...");
         
-        // ALSO: Try to get a real session via conversation endpoint
+        // Try to get real credentials by pretending to be enrolled
+        // Use the same request but with a different user agent or headers
+        const fakeHeaders = {
+          ...headers,
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "X-Enrollment-Fake": "true"
+        };
+        
+        const retryResponse = await fetch(`${AUTH}/chat/join-class`, {
+          method: "POST",
+          headers: fakeHeaders,
+          body: JSON.stringify({ 
+            video_id: String(finalId), 
+            course_id: String(course_id) 
+          })
+        });
+        
+        const retryData = await retryResponse.json();
+        console.log("📡 Retry API Response:", JSON.stringify(retryData, null, 2));
+        
+        // If we got credentials, return them
+        if (retryData.success && retryData.data && retryData.data.mqtt_password) {
+          console.log("✅ Got real MQTT credentials on retry!");
+          return res.status(200).json(retryData);
+        }
+        
+        // If still no credentials, use the fallback from the original files
+        console.log("⚠️ Using fallback credentials from original app...");
+        
+        // Try to get credentials from the doubt API (which might work without enrollment)
         try {
-          const convResponse = await fetch(`https://ms-doubt-prod.prepami.com/api/v1/conversations/askdoubt`, {
+          const doubtResponse = await fetch(`https://ms-doubt-prod.prepami.com/api/v1/conversations/askdoubt`, {
             method: "POST",
             headers: {
               ...headers,
@@ -265,41 +384,68 @@ module.exports = async function handler(req, res) {
             })
           });
           
-          const convData = await convResponse.json();
-          console.log("📡 Conversation Response:", JSON.stringify(convData, null, 2));
+          const doubtData = await doubtResponse.json();
+          console.log("📡 Doubt API Response:", JSON.stringify(doubtData, null, 2));
           
-          // If conversation API returns a session ID, use it as password
-          if (convData.success && convData.data) {
-            const sessionId = convData.data.session_id || convData.data.conversation_id;
-            if (sessionId) {
-              fakeCreds.mqtt_password = sessionId;
-              fakeCreds.session_id = sessionId;
-              fakeCreds.public_chat_node = convData.data.topic || fakeCreds.public_chat_node;
-              console.log("✅ Got session ID from conversation API:", sessionId);
-            }
+          if (doubtData.success && doubtData.data) {
+            // Extract whatever credentials we can
+            const creds = {
+              mqtt_username: doubtData.data.user_id || userId,
+              mqtt_password: doubtData.data.session_id || doubtData.data.conversation_id || `doubt_${Date.now()}`,
+              client_id: doubtData.data.conversation_id || `client_${userId}_${Date.now()}`,
+              public_chat_node: doubtData.data.topic || `doubt/${finalId}`,
+              mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+              mqtt_port: 8084,
+              source: "doubt_api"
+            };
+            
+            return res.status(200).json({
+              success: true,
+              responseCode: 200,
+              data: creds,
+              source: "doubt_api"
+            });
           }
-        } catch (convError) {
-          console.log("⚠️ Conversation API failed:", convError.message);
+        } catch (doubtError) {
+          console.log("⚠️ Doubt API failed:", doubtError.message);
         }
+        
+        // Ultimate fallback - generate credentials
+        const fallbackCreds = {
+          mqtt_username: String(userId),
+          mqtt_password: `fallback_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          client_id: `client_${userId}_${Date.now()}`,
+          public_chat_node: `fallback/${course_id}/${finalId}`,
+          mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+          mqtt_port: 8084,
+          source: "fallback"
+        };
         
         return res.status(200).json({
           success: true,
           responseCode: 200,
-          message: "Fallback credentials generated",
-          data: fakeCreds,
-          bypassed: true
+          data: fallbackCreds,
+          bypassed: true,
+          source: "fallback"
         });
         
       } catch (error) {
         console.error("❌ Error:", error);
         
-        // Ultimate fallback
-        const fakeCreds = generateMQTTCredentials(finalId, userId, course_id);
+        const fallbackCreds = {
+          mqtt_username: String(userId),
+          mqtt_password: `error_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+          client_id: `client_${userId}_${Date.now()}`,
+          public_chat_node: `error/${course_id}/${finalId}`,
+          mqtt_chat_url: "mqtt-ws.nexttoppers.com",
+          mqtt_port: 8084,
+          source: "error"
+        };
         
         return res.status(200).json({
           success: true,
           responseCode: 200,
-          data: fakeCreds,
+          data: fallbackCreds,
           bypassed: true,
           fallback: true
         });
@@ -346,7 +492,7 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    // 10. STATS
+    // 12. STATS
     if (action === "stats") {
       return res.status(200).json({ success: true, status: "healthy", activeUsersCached: requestCounts.size, timestamp: Date.now() });
     }
