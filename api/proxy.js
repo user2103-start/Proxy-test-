@@ -141,7 +141,7 @@ module.exports = async function handler(req, res) {
     // 5. VIDEO/PDF SOURCE DETAILS
     if (action === "video") {
       const { content_id, course_id } = req.query;
-      const response = await fetch(`${ROLEX}/course_id=${course_id}&action=content&folder_id=${content&folder_id}`, {
+      const response = await fetch(`${ROLEX}/action=content_details&content_id=${content_id}&course_id=${course_id}`, {
         method: "GET",
         headers: headers
       });
