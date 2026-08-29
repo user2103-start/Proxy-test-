@@ -6,6 +6,7 @@ const AUTH = "https://auth.nexttoppers.com";
 const NT   = "https://course.nexttoppers.com";
 const TEST = "https://test.nexttoppers.com";
 const DOUBT = "https://ms-doubt-prod.prepami.com";
+const ROLEX = "https://rolexcoderz.com/MissionJeet/content/api.php?"
 
 const requestCounts = new Map();
 
@@ -140,7 +141,7 @@ module.exports = async function handler(req, res) {
     // 5. VIDEO/PDF SOURCE DETAILS
     if (action === "video") {
       const { content_id, course_id } = req.query;
-      const response = await fetch(`${NT}/course/content-details?content_id=${content_id}&course_id=${course_id}`, {
+      const response = await fetch(`${ROLEX}/course_id=${course_id}&action=content&folder_id=${content&folder_id}`, {
         method: "GET",
         headers: headers
       });
