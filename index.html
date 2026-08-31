@@ -1085,7 +1085,7 @@ async function loadFolders(folderId, titleStr = null) {
     contentGrid.innerHTML = '<div class="loader">Loading content...</div>';
     try {
         let targetUrl = folderId === "-1" 
-            ? `${BASE_API}/content?batch_id=${currentCourseId}`
+            ? `${BASE_API}?action=root&course_id=${currentCourseId}`
             : `${BASE_API}/content?folder_id=${folderId}&course_id=${currentCourseId}`;
         const res = await fetch(targetUrl);
         const data = await res.json();
