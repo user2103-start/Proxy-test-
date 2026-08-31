@@ -1026,12 +1026,6 @@ const BASE_URL = "https://proxy-test-three.vercel.app";
 const BATCH_API = `${BASE_URL}/api/batch`;
 const VIBE_API = `${BASE_URL}/api/vibe`;
 
-// CORS Proxy wrapper
-const CORS_PROXY = "https://corsproxy.io/?url=";
-
-function getCorsUrl(url) {
-    return CORS_PROXY + encodeURIComponent(url);
-}
 
 let currentCourseId = null;
 let currentFolderId = "-1"; 
