@@ -1,0 +1,1443 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Squad - JEE Learning Portal</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-primary: #0A0A0A;
+            --bg-secondary: #1E1E1E;
+            --text-primary: #E8E6E3;
+            --text-muted: #A3A3A3;
+            --accent-red: #B91C1C;
+            --glass-bg: rgba(30, 30, 30, 0.25);
+            --glass-border: rgba(232, 230, 227, 0.1);
+            --card-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg-primary);
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Dark background fallback */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: var(--bg-primary);
+            z-index: -10;
+        }
+
+        /* Anime Video Background */
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -9;
+            opacity: 0.85;
+        }
+
+        /* Skeuomorphic - 3D Science Background */
+        .science-3d {
+            display: none;
+        }
+
+        /* Floating 3D Icons */
+        .float-3d {
+            display: none;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Glassmorphic Anime Navbar */
+        nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 1400px;
+            z-index: 10000;
+            background: rgba(30, 30, 30, 0.3);
+            border-radius: 60px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(232, 230, 227, 0.1);
+            padding: 0.8rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .nav-logo-img {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            object-fit: cover;
+            box-shadow: 5px 5px 12px rgba(0,0,0,0.15), -3px -3px 8px rgba(255,255,255,0.7);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .nav-logo-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #B91C1C, #E8E6E3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--text-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .nav-links a:hover {
+            color: var(--accent-red);
+            text-shadow: 0px 0px 10px rgba(185, 28, 28, 0.5);
+        }
+
+        .nav-cta {
+            background: var(--accent-red);
+            padding: 0.6rem 1.5rem;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 20px rgba(185, 28, 28, 0.4);
+            border: 1px solid rgba(232, 230, 227, 0.2);
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+
+        .nav-cta:hover {
+            background: #8B1616;
+            box-shadow: 0 12px 30px rgba(185, 28, 28, 0.6);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Section */
+        #hero {
+            padding-top: 140px;
+            padding-bottom: 60px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        /* Glassmorphic Hero Card */
+        .hero-left {
+            padding: 2rem;
+            background: var(--glass-bg);
+            border-radius: 48px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: rgba(185, 28, 28, 0.2);
+            border-radius: 40px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(185, 28, 28, 0.2);
+            border: 1px solid rgba(185, 28, 28, 0.4);
+            color: var(--accent-red);
+            backdrop-filter: blur(5px);
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .hero-title span {
+            background: linear-gradient(135deg, #B91C1C, #FF6B6B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        /* Skeuomorphic Buttons */
+        .btn-primary, .btn-secondary {
+            padding: 0.9rem 2rem;
+            border-radius: 48px;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-red);
+            box-shadow: 0 8px 24px rgba(185, 28, 28, 0.5);
+            color: var(--text-primary);
+            border: 1px solid rgba(232, 230, 227, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(185, 28, 28, 0.7);
+            background: #8B1616;
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            color: var(--text-primary);
+            border: 1px solid rgba(232, 230, 227, 0.2);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 0 12px 30px rgba(185, 28, 28, 0.4);
+            border-color: rgba(185, 28, 28, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* Hero Right - 3D Science Cards */
+        .hero-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+
+        .science-card {
+            padding: 1.5rem;
+            background: var(--glass-bg);
+            border-radius: 32px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .science-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(185, 28, 28, 0.3);
+            border-color: rgba(185, 28, 28, 0.3);
+        }
+
+        .science-card .formula {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .science-card .desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .formula.math { color: #FF6B6B; }
+        .formula.physics { color: #B91C1C; }
+        .formula.chemistry { color: #FF8C8C; }
+
+        /* Stats Section - Glassmorphic Anime */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            padding: 2.5rem;
+            margin: 3rem 0;
+            background: var(--glass-bg);
+            border-radius: 56px;
+            box-shadow: var(--card-shadow);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+            background: rgba(185, 28, 28, 0.1);
+            border-radius: 40px;
+            box-shadow: 0 4px 15px rgba(185, 28, 28, 0.1);
+            border: 1px solid rgba(185, 28, 28, 0.2);
+        }
+
+        .stat-num {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--accent-red);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.3rem;
+            font-weight: 600;
+        }
+
+        /* Course Cards - Rich 3D */
+        #courses {
+            padding: 4rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-eyebrow {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent-red);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--text-primary);
+        }
+
+        .courses-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .course-card {
+            padding: 1.8rem;
+            background: var(--glass-bg);
+            border-radius: 40px;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .course-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 40px rgba(185, 28, 28, 0.3);
+            border-color: rgba(185, 28, 28, 0.3);
+        }
+
+        .course-icon {
+            width: 65px;
+            height: 65px;
+            background: rgba(185, 28, 28, 0.15);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 4px 15px rgba(185, 28, 28, 0.1);
+            border: 1px solid rgba(185, 28, 28, 0.2);
+        }
+
+        .course-level {
+            font-size: 0.6rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--accent-red);
+            margin-bottom: 0.5rem;
+            letter-spacing: 1px;
+        }
+
+        .course-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .course-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .card-thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            object-fit: cover;
+            border-radius: 24px;
+            margin-bottom: 1rem;
+            display: block;
+            background: rgba(185, 28, 28, 0.08);
+            border: 1px solid rgba(232, 230, 227, 0.08);
+        }
+
+        .image-card {
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .image-card .card-image {
+            width: 100%;
+            height: auto;
+            max-height: 420px;
+            object-fit: contain;
+            border-radius: 28px;
+            display: block;
+            margin: 0 auto 0.9rem;
+            background: rgba(0, 0, 0, 0.35);
+        }
+
+        .image-card .course-name {
+            font-size: 1rem;
+            margin-bottom: 0;
+        }
+
+        /* Why Section - 3D Panel */
+        #why {
+            padding: 4rem 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            margin-top: 3rem;
+        }
+
+        .why-point {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            background: var(--glass-bg);
+            border-radius: 32px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .why-point:hover {
+            transform: translateX(5px);
+            border-color: rgba(185, 28, 28, 0.3);
+            box-shadow: 0 8px 25px rgba(185, 28, 28, 0.2);
+        }
+
+        .why-num {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--accent-red);
+            margin-bottom: 0.5rem;
+        }
+
+        .why-point-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .why-point-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .quote-card {
+            padding: 2rem;
+            background: var(--glass-bg);
+            border-radius: 48px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .quote-text {
+            font-size: 1.2rem;
+            font-weight: 500;
+            line-height: 1.6;
+            color: var(--accent-red);
+            font-style: italic;
+        }
+
+        /* CTA Section - Glassmorphic Anime */
+        .cta-section {
+            padding: 3.5rem;
+            text-align: center;
+            background: var(--glass-bg);
+            border-radius: 56px;
+            margin: 3rem 0;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .cta-section h2 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .cta-section p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .cta-btns-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        /* Footer - Glassmorphic Anime */
+        .footer {
+            margin-top: 4rem;
+            padding: 3rem;
+            background: var(--glass-bg);
+            border-radius: 56px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .ftop {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .fbrand .btxt {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #B91C1C, #E8E6E3);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .fbrand p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .fcol h4 {
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-weight: 700;
+        }
+
+        .fcol ul {
+            list-style: none;
+        }
+
+        .fcol li {
+            margin-bottom: 0.5rem;
+        }
+
+        .fcol a {
+            text-decoration: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            transition: color 0.3s;
+        }
+
+        .fcol a:hover {
+            color: var(--accent-red);
+        }
+
+        .fbot {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(232, 230, 227, 0.1);
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* App View */
+        #app-view {
+            display: none;
+            position: relative;
+            z-index: 1;
+            padding-top: 100px;
+        }
+
+        .breadcrumbs {
+            margin-bottom: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--glass-bg);
+            border-radius: 60px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .bc-link {
+            cursor: pointer;
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        .video-wrapper {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--glass-bg);
+            border-radius: 40px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .video-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .video-title {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .quality-select {
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            font-family: inherit;
+            cursor: pointer;
+            color: var(--text-primary);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        video {
+            width: 100%;
+            border-radius: 28px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: block;
+            max-width: 100%;
+            object-fit: contain;
+        }
+
+        video::-webkit-media-controls-fullscreen-button {
+            display: block !important;
+        }
+
+        /* Fullscreen Styles */
+        video:fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            object-fit: contain !important;
+        }
+
+        :-webkit-full-screen video {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            object-fit: contain !important;
+        }
+
+        /* Firefox Fullscreen */
+        video:-moz-full-screen {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0 !important;
+            object-fit: contain !important;
+        }
+
+        /* Landscape Mode Styles */
+        @media (orientation: landscape) {
+            .video-wrapper {
+                margin-bottom: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+
+            .video-header {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                background: rgba(0, 0, 0, 0.5);
+                padding: 8px 12px;
+                border-radius: 20px;
+                z-index: 10001;
+                margin-bottom: 0;
+            }
+
+            .video-title {
+                color: white;
+                font-size: 0.9rem;
+            }
+
+            .video-controls {
+                display: flex;
+                gap: 8px;
+            }
+
+            .quality-select {
+                background: rgba(255, 255, 255, 0.9) !important;
+                padding: 4px 8px !important;
+                font-size: 0.8rem;
+            }
+
+            .nav-cta {
+                padding: 4px 12px !important;
+                font-size: 0.8rem !important;
+            }
+
+            video {
+                width: 100vw !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                object-fit: contain !important;
+            }
+        }
+
+        /* Prevent zoom on input focus in landscape */
+        @media (orientation: landscape) {
+            input[type="text"],
+            input[type="number"],
+            select,
+            textarea {
+                font-size: 16px !important;
+            }
+        }
+
+        .loader {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 10px; }
+            nav { padding: 0.6rem 1rem; }
+            .nav-links { display: none; }
+            .hero-grid { grid-template-columns: 1fr; gap: 2rem; }
+            .hero-title { font-size: 2.5rem; }
+            .stats-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .why-grid { grid-template-columns: 1fr; }
+            .ftop { grid-template-columns: 1fr; text-align: center; }
+            .courses-grid { grid-template-columns: 1fr; }
+            .cta-section { padding: 2rem; }
+            #app-view { padding-top: 100px; }
+            #hero { padding-top: 120px; }
+            
+            /* Mobile: Remove blur for clearer video visibility */
+            nav, .hero-left, .science-card, .stats-grid, .why-point, 
+            .quote-card, .cta-section, .course-card, .footer, 
+            .breadcrumbs, .video-wrapper {
+                backdrop-filter: blur(0px) !important;
+                -webkit-backdrop-filter: blur(0px) !important;
+            }
+            
+            /* Increase transparency for mobile */
+            nav, .hero-left, .science-card, .stats-grid, .why-point,
+            .quote-card, .cta-section, .course-card, .footer,
+            .breadcrumbs, .video-wrapper {
+                background: rgba(30, 30, 30, 0.15) !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Anime Video Background -->
+<video id="bg-video" autoplay muted loop playsinline preload="auto" crossorigin="anonymous">
+    <source src="https://files.catbox.moe/nlwxqx.mp4" type="video/mp4">
+</video>
+
+<!-- Skeuomorphic 3D Science Background -->
+<div class="science-3d">
+    <div class="math-symbol">∫</div>
+    <div class="math-symbol">√</div>
+    <div class="math-symbol">π</div>
+    <div class="math-symbol">Δ</div>
+    <div class="math-symbol">ψ</div>
+</div>
+<div class="float-3d">
+    <span style="top: 10%; left: 5%;">🔬</span>
+    <span style="top: 20%; right: 8%;">⚛️</span>
+    <span style="top: 50%; left: 2%;">📐</span>
+    <span style="bottom: 30%; right: 3%;">🧪</span>
+    <span style="top: 70%; left: 10%;">⚡</span>
+    <span style="bottom: 15%; left: 20%;">🧬</span>
+    <span style="top: 40%; right: 15%;">🔭</span>
+</div>
+
+<div class="container">
+    <nav>
+        <a class="nav-logo" onclick="goHome()">
+            <img src="https://i.postimg.cc/52yM0nbQ/IMG-20260412-193847-612.jpg" alt="Study Squad" class="nav-logo-img" onerror="this.src='https://via.placeholder.com/44?text=SS'">
+            <span class="nav-logo-text">STUDY SQUAD</span>
+        </a>
+        <ul class="nav-links">
+            <li><a onclick="scrollToSection('hero')">Home</a></li>
+            <li><a onclick="scrollToSection('courses')">Batches</a></li>
+            <li><a onclick="scrollToSection('why')">Why Us</a></li>
+        </ul>
+        <div class="nav-cta" onclick="scrollToSection('courses')">🚀 Start Learning</div>
+    </nav>
+
+    <div id="landing-view">
+        <section id="hero">
+            <div class="hero-grid">
+                <div class="hero-left">
+                    <div class="hero-badge">⚡ JEE Advanced 2026</div>
+                    <h1 class="hero-title">Master <span>JEE</span> with<br>Study Squad</h1>
+                    <p class="hero-desc">Crack IIT JEE with India's most comprehensive learning platform. Access premium video lectures, detailed study materials, and mock tests — all for free.</p>
+                    <div class="hero-buttons">
+                        <button class="btn-primary" onclick="scrollToSection('courses')">Explore Batches →</button>
+                        <button class="btn-secondary" onclick="scrollToSection('why')">Learn More</button>
+                    </div>
+                </div>
+                <div class="hero-right">
+                    <div class="science-card">
+                        <div class="formula math">∫₀^∞ e^{-x²} dx = √π/2</div>
+                        <div class="desc">Gaussian Integral - Mathematics</div>
+                    </div>
+                    <div class="science-card">
+                        <div class="formula physics">E = mc² | F = dp/dt</div>
+                        <div class="desc">Mass-Energy Equivalence - Physics</div>
+                    </div>
+                    <div class="science-card">
+                        <div class="formula chemistry">K_eq = [C]ᶜ[D]ᵈ / [A]ᵃ[B]ᵇ</div>
+                        <div class="desc">Chemical Equilibrium - Chemistry</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="stats-grid">
+            <div class="stat-item"><span class="stat-num">50k+</span><div class="stat-label">Active Students</div></div>
+            <div class="stat-item"><span class="stat-num">1000+</span><div class="stat-label">Video Lectures</div></div>
+            <div class="stat-item"><span class="stat-num">24/7</span><div class="stat-label">Study Access</div></div>
+        </div>
+
+        <section id="courses">
+            <div class="section-header">
+                <div class="section-eyebrow">JEE 2026 Batches</div>
+                <h2 class="section-h2">Choose Your Batch</h2>
+            </div>
+            <div class="courses-grid" id="batches-grid">
+                <div class="loader">Loading batches...</div>
+            </div>
+        </section>
+
+        <section id="why">
+            <div class="section-header">
+                <div class="section-eyebrow">Why Study Squad</div>
+                <h2 class="section-h2">Built for JEE Aspirants</h2>
+            </div>
+            <div class="why-grid">
+                <div>
+                    <div class="why-point">
+                        <div class="why-num">01</div>
+                        <div class="why-point-title">HD Video Lectures</div>
+                        <div class="why-point-desc">High-quality streaming with adaptive bitrate for smooth learning on any connection.</div>
+                    </div>
+                    <div class="why-point">
+                        <div class="why-num">02</div>
+                        <div class="why-point-title">PDF Study Materials</div>
+                        <div class="why-point-desc">Downloadable notes, DPPs, and previous year papers for practice.</div>
+                    </div>
+                    <div class="why-point">
+                        <div class="why-num">03</div>
+                        <div class="why-point-title">Topic-wise Organization</div>
+                        <div class="why-point-desc">Structured content for Physics, Chemistry, and Mathematics.</div>
+                    </div>
+                </div>
+                <div class="quote-card">
+                    <div class="quote-text">"The only limit is your dedication — we provide the rest."</div>
+                </div>
+            </div>
+        </section>
+
+        <div class="cta-section">
+            <h2>Ready to Crack JEE?</h2>
+            <p>Join thousands of successful aspirants who chose Study Squad.</p>
+            <div class="cta-btns-container">
+                <button class="btn-primary" onclick="scrollToSection('courses')">📚 Explore Batches</button>
+                <button class="btn-secondary" onclick="window.open('https://t.me/+DWoy0pgaw9VjOGM1')">📢 Join Telegram</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="app-view">
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div class="app-header">
+            <div class="section-eyebrow">Study Squad Directory</div>
+            <h2 class="section-h2" id="app-title">Loading...</h2>
+        </div>
+        <div class="video-wrapper" id="video-wrapper" style="display: none;">
+            <div class="video-header">
+                <div class="video-title" id="video-title">Player</div>
+                <div class="video-controls">
+                    <select class="quality-select" id="quality-selector" onchange="changeVideoQuality()"></select>
+                    <button class="nav-cta" onclick="closePlayer()" style="padding: 5px 15px;">Close</button>
+                </div>
+            </div>
+            <video id="video-player" controls autoplay allowfullscreen playsinline muted></video>
+        </div>
+        <div class="courses-grid" id="content-grid"></div>
+    </div>
+
+    <footer class="footer">
+        <div class="ftop">
+            <div class="fbrand">
+                <span class="btxt">📘 STUDY SQUAD</span>
+                <p>Free & premium quality JEE preparation resources for every aspirant.</p>
+            </div>
+            <div class="fcol">
+                <h4>Platforms</h4>
+                <ul>
+                    <li><a href="https://mixvibe-pw.vercel.app/">Physics Wallah</a></li>
+                    <li><a href="https://mixvibe-nt.vercel.app/">Next Toppers</a></li>
+                    <li><a href="https://mixvibe-mj.vercel.app/">Mission JEET</a></li>
+                    <li><a href="https://pietech.vercel.app/VibrantAcademy">Vibrant Academy</a></li>
+                    <li><a href="https://edukhazana.vercel.app/">EduLibrary</a></li>
+                </ul>
+            </div>
+            <div class="fcol">
+                <h4>Community</h4>
+                <ul>
+                    <li><a href="https://t.me/+DWoy0pgaw9VjOGM1">Telegram Channel</a></li>
+                    <li><a href="https://t.me/+DWoy0pgaw9VjOGM1">Support Bot</a></li>
+                </ul>
+            </div>
+            <div class="fcol">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a onclick="scrollToSection('courses')">Batches</a></li>
+                    <li><a onclick="scrollToSection('why')">Features</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="fbot">
+            <p>© 2026 Study Squad · Empowering JEE Aspirants</p>
+        </div>
+    </footer>
+</div>
+
+<script>
+// ========== SECURITY & PROTECTION ==========
+(function () {
+    const BLOCK_REDIRECT = "https://google.com";
+
+    function killSite() {
+        try { document.documentElement.innerHTML = ""; } catch (e) {}
+        try { window.open("", "_self"); window.close(); } catch (e) {}
+        window.location.replace(BLOCK_REDIRECT);
+    }
+
+    // Disable Right-Click
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
+
+    // Disable Keyboard Shortcuts for DevTools
+    document.addEventListener('keydown', function (e) {
+        const k = (e.key || "").toLowerCase();
+        const devKeys = (k === 'f12')
+            || (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j' || k === 'c'))
+            || (e.metaKey && e.altKey && (k === 'i' || k === 'j' || k === 'c'))
+            || (e.ctrlKey && (k === 'u' || k === 's'));
+        if (devKeys) { e.preventDefault(); killSite(); return false; }
+    }, true);
+
+    // DevTools detection via window docking / undocking size gap
+    setInterval(function () {
+        const wGap = window.outerWidth - window.innerWidth;
+        const hGap = window.outerHeight - window.innerHeight;
+        if (wGap > 200 || hGap > 250) killSite();
+    }, 1000);
+
+    // DevTools detection via debugger timing
+    setInterval(function () {
+        const t0 = performance.now();
+        // eslint-disable-next-line no-debugger
+        debugger;
+        if (performance.now() - t0 > 150) killSite();
+    }, 2000);
+})();
+
+// Disable Console Methods
+(function() {
+    const noop = function() {};
+    const methods = ['log', 'debug', 'info', 'warn', 'error', 'assert', 'dir', 'dirxml', 'group', 'groupEnd', 'clear', 'count', 'table', 'time', 'timeEnd', 'trace'];
+    for (let m of methods) {
+        Object.defineProperty(console, m, { value: noop, writable: false, configurable: false });
+    }
+})();
+
+// Disable Text Selection & Image Drag
+document.body.style.userSelect = 'none';
+document.body.style.webkitUserSelect = 'none';
+document.addEventListener('dragstart', function(e) {
+    if (e.target.tagName === 'IMG') {
+        e.preventDefault();
+        return false;
+    }
+});
+
+console.clear();
+console.log("%c🔒 Study Squad - Premium JEE Platform", "color: #3b82f6; font-size: 16px; font-weight: bold;");
+
+// ========== API CONFIGURATION ==========
+const BASE_API = "https://proxy-test-three.vercel.app";
+const BATCH_API = `${BASE_API}/api/batch`;
+const VIBE_API = `${BASE_API}/api/vibe`;
+
+let currentCourseId = null;
+let currentFolderId = "-1";
+let navHistory = [];
+let hlsInstance = null;
+let currentVideoSources = {};
+
+const landingView = document.getElementById('landing-view');
+const appView = document.getElementById('app-view');
+const batchesGrid = document.getElementById('batches-grid');
+const contentGrid = document.getElementById('content-grid');
+const breadcrumbs = document.getElementById('breadcrumbs');
+const appTitle = document.getElementById('app-title');
+const videoWrapper = document.getElementById('video-wrapper');
+const videoPlayer = document.getElementById('video-player');
+const qualitySelector = document.getElementById('quality-selector');
+
+window.onload = loadBatches;
+
+function esc(str) {
+    return String(str == null ? "" : str)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function getJSON(url) {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+}
+
+function scrollToSection(id) {
+    document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+}
+
+function goHome() {
+    closePlayer();
+    appView.style.display = 'none';
+    landingView.style.display = 'block';
+    window.scrollTo(0, 0);
+}
+
+// ========== BATCHES ==========
+async function loadBatches() {
+    try {
+        const data = await getJSON(BATCH_API);
+        const batches = (data && data.success && Array.isArray(data.data)) ? data.data : [];
+        batchesGrid.innerHTML = '';
+        if (batches.length === 0) {
+            batchesGrid.innerHTML = '<div class="loader">No batches available.</div>';
+            return;
+        }
+        batches.forEach((batch) => {
+            const card = document.createElement('div');
+            card.className = 'course-card';
+            card.onclick = () => openCourse(batch.id, batch.title);
+            const level = [batch.cls ? `Class ${batch.cls}` : 'JEE Batch', batch.price || ''].filter(Boolean).join(' · ');
+            const media = batch.imageUrl
+                ? `<img class="card-thumb" src="${esc(batch.imageUrl)}" alt="${esc(batch.title)}" loading="lazy">`
+                : `<div class="course-icon">📖</div>`;
+            card.innerHTML = `
+                ${media}
+                <div class="course-level">${esc(level)}</div>
+                <div class="course-name">${esc(batch.title)}</div>
+                <div class="course-desc">Physics, Chemistry & Mathematics</div>
+            `;
+            batchesGrid.appendChild(card);
+        });
+    } catch (error) {
+        batchesGrid.innerHTML = '<div class="loader">Error loading batches.</div>';
+    }
+}
+
+function openCourse(courseId, courseName) {
+    landingView.style.display = 'none';
+    appView.style.display = 'block';
+    window.scrollTo(0, 0);
+    currentCourseId = courseId;
+    navHistory = [{ id: "-1", title: courseName }];
+    updateBreadcrumbs();
+    loadFolders("-1", courseName);
+}
+
+// ========== CONTENT (ROOT / FOLDER) ==========
+async function loadFolders(folderId, titleStr = null) {
+    closePlayer();
+    currentFolderId = folderId;
+    if (titleStr) {
+        const existingIdx = navHistory.findIndex(n => n.id === folderId);
+        if (existingIdx > -1) {
+            navHistory = navHistory.slice(0, existingIdx + 1);
+        } else {
+            navHistory.push({ id: folderId, title: titleStr });
+        }
+        updateBreadcrumbs();
+        appTitle.innerText = titleStr;
+    }
+    contentGrid.innerHTML = '<div class="loader">Loading content...</div>';
+    try {
+        const targetUrl = folderId === "-1"
+            ? `${VIBE_API}?action=root&course_id=${encodeURIComponent(currentCourseId)}`
+            : `${VIBE_API}?action=folder&course_id=${encodeURIComponent(currentCourseId)}&folder_id=${encodeURIComponent(folderId)}`;
+        const payload = await getJSON(targetUrl);
+        const items = (payload && payload.data && Array.isArray(payload.data.data)) ? payload.data.data : [];
+        contentGrid.innerHTML = '';
+        if (items.length === 0) {
+            contentGrid.innerHTML = '<div class="loader">No content available.</div>';
+            return;
+        }
+        items.forEach((item) => {
+            const type = String(item.material_type || '').toUpperCase();
+            const title = item.Title || item.title || 'Untitled';
+            const card = document.createElement('div');
+            card.onclick = () => handleItemClick(item, title);
+
+            if (type === 'IMAGE' && item.thumbnail) {
+                // Image items: sirf image + neeche title
+                card.className = 'course-card image-card';
+                card.innerHTML = `
+                    <img class="card-image" src="${esc(item.thumbnail)}" alt="${esc(title)}" loading="lazy">
+                    <div class="course-name">${esc(title)}</div>
+                `;
+                contentGrid.appendChild(card);
+                return;
+            }
+
+            let icon = "📂";
+            if (type === 'VIDEO') icon = "🎬";
+            if (type === 'PDF') icon = "📄";
+
+            const media = (type === 'VIDEO' && item.thumbnail)
+                ? `<img class="card-thumb" src="${esc(item.thumbnail)}" alt="${esc(title)}" loading="lazy">`
+                : `<div class="course-icon">${icon}</div>`;
+
+            const desc = type === 'FOLDER'
+                ? `${item.videos_count || 0} videos, ${item.files_count || 0} files`
+                : (item.duration || item.date_and_time || 'Available');
+
+            card.className = 'course-card';
+            card.innerHTML = `
+                ${media}
+                <div class="course-level">${esc(type)}</div>
+                <div class="course-name">${esc(title)}</div>
+                <div class="course-desc">${esc(desc)}</div>
+            `;
+            contentGrid.appendChild(card);
+        });
+    } catch (err) {
+        contentGrid.innerHTML = '<div class="loader">Error loading content.</div>';
+    }
+}
+
+function handleItemClick(item, itemTitle) {
+    const type = String(item.material_type || '').toUpperCase();
+    if (type === 'FOLDER') {
+        loadFolders(item.id, itemTitle);
+    } else if (type === 'VIDEO') {
+        playVideo(item.id, itemTitle);
+    } else if (type === 'IMAGE') {
+        if (item.thumbnail) window.open(item.thumbnail, '_blank');
+    } else {
+        openDocument(item.id, item.parent_id);
+    }
+}
+
+// ========== PDF ==========
+async function openDocument(itemId, parentId) {
+    try {
+        const url = `${VIBE_API}?action=pdf&pdf_id=${encodeURIComponent(itemId)}&course_id=${encodeURIComponent(currentCourseId)}&parent_id=${encodeURIComponent(parentId || currentFolderId)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        let viewerUrl = (await res.text()).trim();
+        // Response plain URL hai; agar JSON aa jaye to usme se nikal lo
+        if (viewerUrl.startsWith('{')) {
+            try {
+                const j = JSON.parse(viewerUrl);
+                viewerUrl = j.pdf_viewer || j.url || (j.data && (j.data.pdf_viewer || j.data.url)) || '';
+            } catch (e) { /* ignore */ }
+        }
+        viewerUrl = viewerUrl.replace(/^"|"$/g, '');
+        if (viewerUrl.startsWith('http')) {
+            // FIX: Direct open without about:blank to preserve referrer and cookies
+            window.open(viewerUrl, '_blank');
+        } else {
+            throw new Error('No viewer url');
+        }
+    } catch (err) {
+        alert('Error loading document: ' + err.message);
+    }
+}
+
+// ========== VIDEO ==========
+function playerUrlFor(qualityUrl) {
+    return `${VIBE_API}?action=player&url=${encodeURIComponent(qualityUrl)}`;
+}
+
+async function playVideo(videoId, title) {
+    contentGrid.style.display = 'none';
+    videoWrapper.style.display = 'block';
+    document.getElementById('video-title').innerText = title;
+    videoPlayer.src = "";
+    qualitySelector.innerHTML = '<option>Loading qualities...</option>';
+    try {
+        const payload = await getJSON(`${VIBE_API}?action=video&video_id=${encodeURIComponent(videoId)}&course_id=${encodeURIComponent(currentCourseId)}`);
+        const info = payload && payload.data ? payload.data : {};
+        const qualities = Array.isArray(info.qualities) ? info.qualities : [];
+        // Sirf quality ka `url` use hota hai — player_url / decoded_video_link kabhi nahi
+        currentVideoSources = {};
+        qualities.forEach(q => {
+            if (q && q.quality && q.url) {
+                currentVideoSources[String(parseInt(q.quality, 10))] = playerUrlFor(q.url);
+            }
+        });
+        const keys = Object.keys(currentVideoSources).sort((a, b) => parseInt(b) - parseInt(a));
+        if (keys.length === 0) {
+            alert("Video stream unavailable.");
+            closePlayer();
+            return;
+        }
+        qualitySelector.innerHTML = '';
+        keys.forEach(q => {
+            const opt = document.createElement('option');
+            opt.value = q;
+            opt.innerText = `${q}p`;
+            qualitySelector.appendChild(opt);
+        });
+        initHLSPlayer(currentVideoSources[keys[0]]);
+    } catch (err) {
+        alert("Unable to load video.");
+        closePlayer();
+    }
+}
+
+function changeVideoQuality() {
+    const selectedQuality = qualitySelector.value;
+    if (currentVideoSources[selectedQuality]) {
+        const currentTime = videoPlayer.currentTime;
+        initHLSPlayer(currentVideoSources[selectedQuality], currentTime);
+    }
+}
+
+function initHLSPlayer(m3u8Url, startTime = 0) {
+    if (hlsInstance) { hlsInstance.destroy(); }
+    if (Hls.isSupported()) {
+        hlsInstance = new Hls({ autoStartLoad: true, startLevel: -1 });
+        hlsInstance.loadSource(m3u8Url);
+        hlsInstance.attachMedia(videoPlayer);
+        hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
+            videoPlayer.currentTime = startTime;
+            videoPlayer.play().catch(err => {
+                videoPlayer.muted = true;
+                videoPlayer.play();
+            });
+        });
+    } else if (videoPlayer.canPlayType('application/vnd.apple.mpegurl')) {
+        videoPlayer.src = m3u8Url;
+        videoPlayer.currentTime = startTime;
+        videoPlayer.play().catch(err => {
+            videoPlayer.muted = true;
+            videoPlayer.play();
+        });
+    }
+}
+
+function closePlayer() {
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    videoPlayer.pause();
+    videoPlayer.src = "";
+    videoWrapper.style.display = 'none';
+    contentGrid.style.display = 'grid';
+}
+
+function updateBreadcrumbs() {
+    breadcrumbs.innerHTML = '<span class="bc-link" onclick="goHome()">🏠 Home</span>';
+    navHistory.forEach((nav, idx) => {
+        const sep = document.createElement('span');
+        sep.style.margin = '0 5px';
+        sep.textContent = '/';
+        breadcrumbs.appendChild(sep);
+        const link = document.createElement('span');
+        link.className = 'bc-link';
+        link.textContent = nav.title;
+        link.onclick = () => loadFolders(nav.id, nav.title);
+        breadcrumbs.appendChild(link);
+    });
+}
+
+// ========== PERMANENT LANDSCAPE MODE SUPPORT ==========
+let isFullscreenMode = false;
+let isLandscapeMode = false;
+
+function requestVideoFullscreen() {
+    const video = document.getElementById('video-player');
+    if (video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {});
+    } else if (video.webkitRequestFullscreen) {
+        video.webkitRequestFullscreen();
+    } else if (video.mozRequestFullScreen) {
+        video.mozRequestFullScreen();
+    } else if (video.msRequestFullscreen) {
+        video.msRequestFullscreen();
+    }
+}
+
+window.addEventListener('orientationchange', function () {
+    isLandscapeMode = window.innerWidth > window.innerHeight;
+    if (!videoPlayer.paused && isLandscapeMode && !isFullscreenMode) {
+        setTimeout(requestVideoFullscreen, 100);
+    }
+});
+
+document.addEventListener('fullscreenchange', () => { isFullscreenMode = !!document.fullscreenElement; });
+document.addEventListener('webkitfullscreenchange', () => { isFullscreenMode = !!document.webkitFullscreenElement; });
+document.addEventListener('mozfullscreenchange', () => { isFullscreenMode = !!document.mozFullScreenElement; });
+document.addEventListener('msfullscreenchange', () => { isFullscreenMode = !!document.msFullscreenElement; });
+
+window.addEventListener('load', () => {
+    isLandscapeMode = window.innerWidth > window.innerHeight;
+});
+
+function lockScreenOrientation() {
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+    }
+}
+
+videoPlayer.addEventListener('fullscreenchange', () => { isFullscreenMode = !!document.fullscreenElement; });
+
+videoPlayer.addEventListener('play', () => {
+    if (isLandscapeMode) setTimeout(requestVideoFullscreen, 500);
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        videoPlayer.pause();
+    } else if (!videoPlayer.paused) {
+        videoPlayer.play().catch(() => {});
+    }
+});
+
+// FIX: Handle browser back button - go back one step in navigation history instead of closing site
+window.addEventListener('popstate', (event) => {
+    event.preventDefault();
+    if (navHistory.length > 0) {
+        navHistory.pop();
+        if (navHistory.length === 0) {
+            goHome();
+        } else {
+            const lastNav = navHistory[navHistory.length - 1];
+            loadFolders(lastNav.id, lastNav.title);
+        }
+    }
+    return false;
+});
+</script>
+</body>
+</html>
