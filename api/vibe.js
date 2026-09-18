@@ -26,13 +26,13 @@ export default async function handler(req, res) {
       // Root Course Content
       case "root":
         targetUrl =
-          `https://smex.iownprince5.workers.dev/get/folder_contentsv3?course_id=${course_id}&parent_id=-1&start=0`;
+          `https://studybeepro.site/vib/get/folder_contentsv3?course_id=${course_id}&parent_id=-1&start=0`;
         break;
 
       // Folder Content
       case "folder":
         targetUrl =
-          `https://smex.iownprince5.workers.dev/get/folder_contentsv3?course_id=${course_id}&parent_id=${folder_id}&start=0`;
+          `https://studybeepro.site/vib/get/folder_contentsv3?course_id=${course_id}&parent_id=${folder_id}&start=0`;
         break;
 
       // Live Classes
