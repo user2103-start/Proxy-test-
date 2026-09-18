@@ -6,9 +6,11 @@ export default async function handler(req, res) {
       folder_id,
       video_id,
       pdf_id,
-      parent_id,
-      url
+      parent_id
     } = req.query;
+
+    // New upstream base
+    const API_BASE = "https://studybeepro.site/vib";
 
     const HEADERS = {
       "accept": "*/*",
@@ -23,58 +25,34 @@ export default async function handler(req, res) {
 
     switch (action) {
 
-      // Root Course Content
       case "root":
         targetUrl =
-          `https://studybeepro.site/vib/get/folder_contentsv3?course_id=${course_id}&parent_id=-1&start=0`;
+          `${API_BASE}/get/folder_contentsv3?course_id=${course_id}&parent_id=-1&start=0`;
         break;
 
-      // Folder Content
       case "folder":
         targetUrl =
-          `https://studybeepro.site/vib/get/folder_contentsv3?course_id=${course_id}&parent_id=${folder_id}&start=0`;
+          `${API_BASE}/get/folder_contentsv3?course_id=${course_id}&parent_id=${folder_id}&start=0`;
         break;
 
-      // Live Classes
       case "live":
         targetUrl =
-          `https://smex.iownprince5.workers.dev/get/course_contents_by_live_status?course_id=${course_id}&start=0`;
+          `${API_BASE}/get/course_contents_by_live_status?course_id=${course_id}&start=0`;
         break;
 
-      // Previous Live Classes
       case "previous":
         targetUrl =
-          `https://smex.iownprince5.workers.dev/get/get_previous_live_videos?course_id=${course_id}&start=0&folder_wise_course=1`;
+          `${API_BASE}/get/get_previous_live_videos?course_id=${course_id}&start=0&folder_wise_course=1`;
         break;
 
-      // Video Info
       case "video":
         targetUrl =
-          `https://smex.iownprince5.workers.dev/?video_id=${video_id}&course_id=${course_id}`;
+          `${API_BASE}/?video_id=${video_id}&course_id=${course_id}`;
         break;
 
-      // Player Proxy
-      case "player":
-        targetUrl =
-          `https://studybeepro.site/proxy?url=${encodeURIComponent(url)}`;
-        break;
-
-      // PDF API
       case "pdf":
         targetUrl =
           `https://vibrant-live-api.lovable.app/api/v1/vibrant/pdf?pdf_id=${pdf_id}&course_id=${course_id}&parent_id=${parent_id}`;
-        break;
-
-      // PDF Viewer
-      case "viewer":
-        targetUrl =
-          `https://pdfweb.classx.co.in/pdfjs-latest/web/viewer.html?file=${encodeURIComponent(url)}`;
-        break;
-
-      // PDF Download
-      case "download":
-        targetUrl =
-          `https://pdf-appx.edumate.life/?url=${encodeURIComponent(url)}`;
         break;
 
       default:
