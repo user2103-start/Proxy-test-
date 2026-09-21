@@ -1,9 +1,15 @@
 export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Turnstile-Token");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With"
+  );
 
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
 
   try {
     const {
@@ -11,74 +17,67 @@ export default async function handler(req, res) {
       course_id,
       folder_id,
       video_id,
-      pdf_id,
       parent_id,
+      pdf_id,
       url
-    } = req.body || req.query;
+    } = req.query;
 
-    const turnstileToken = req.headers["x-turnstile-token"];
-
-    if (!turnstileToken) {
-      return res.status(400).json({
-        success: false,
-        error: "Turnstile token required in X-Turnstile-Token header"
-      });
-    }
-
-    const API_BASE = "https://studybeepro.site/vib";
-
-    const HEADERS = {
-      "accept": "*/*",
-      "auth-key": "appxapi",
-      "client-service": "Appx",
-      "origin": "https://www.vibrantacademy.com",
-      "referer": "https://www.vibrantacademy.com/",
-      "source": "website",
-      "CF-Turnstile-Response": turnstileToken  // ← Magic!
-    };
+    const API_BASE = "https://platform.studyparcham.in/api/vibrant";
 
     let targetUrl = "";
 
     switch (action) {
+
+      // Root Content
       case "root":
-        targetUrl = `${API_BASE}/get/folder_contentsv3?course_id=${course_id}&parent_id=-1&start=0`;
+        targetUrl =
+          `${API_BASE}/course?course_id=${course_id}&parent_id=-1&start=0`;
         break;
+
+      // Folder Content
       case "folder":
-        targetUrl = `${API_BASE}/get/folder_contentsv3?course_id=${course_id}&parent_id=${folder_id}&start=0`;
+        targetUrl =
+          `${API_BASE}/course?course_id=${course_id}&parent_id=${folder_id}&start=0`;
         break;
-      case "live":
-        targetUrl = `${API_BASE}/get/course_contents_by_live_status?course_id=${course_id}&start=0`;
-        break;
-      case "previous":
-        targetUrl = `${API_BASE}/get/get_previous_live_videos?course_id=${course_id}&start=0&folder_wise_course=1`;
-        break;
+
+      // Video Details
       case "video":
-        targetUrl = `${API_BASE}/?video_id=${video_id}&course_id=${course_id}`;
+        targetUrl =
+          `${API_BASE}/videopower?course_id=${course_id}&video_id=${video_id}`;
         break;
-      case "player":
-        targetUrl = `https://studybeepro.site/proxy?url=${encodeURIComponent(url)}`;
-        break;
+
+      // PDF Details
       case "pdf":
-        targetUrl = `https://vibrant-live-api.lovable.app/api/v1/vibrant/pdf?pdf_id=${pdf_id}&course_id=${course_id}&parent_id=${parent_id}`;
+        targetUrl =
+          `${API_BASE}/hehe?course_id=${course_id}&parent_id=${parent_id}&content_id=${pdf_id}`;
         break;
+
+      // Player Proxy
+      case "player":
+        targetUrl =
+          `${API_BASE}/play?url=${encodeURIComponent(url)}`;
+        break;
+
       default:
-        return res.status(400).json({ success: false, message: "Invalid action" });
+        return res.status(400).json({
+          success: false,
+          message: "Invalid action"
+        });
     }
 
-    const response = await fetch(targetUrl, { headers: HEADERS });
-
-    if (response.status === 403) {
-      return res.status(403).json({
-        success: false,
-        error: "Turnstile token invalid or expired. Please re-verify."
-      });
-    }
+    const response = await fetch(targetUrl, {
+      headers: {
+        "accept": "*/*"
+      }
+    });
 
     const contentType = response.headers.get("content-type") || "";
+
     res.setHeader("Content-Type", contentType);
 
     if (contentType.includes("application/json")) {
       const data = await response.json();
+
       return res.status(response.status).json({
         success: true,
         source: action,
@@ -90,6 +89,9 @@ export default async function handler(req, res) {
     return res.status(response.status).send(text);
 
   } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 }
