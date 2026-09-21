@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       // Player Proxy
       case "player":
         targetUrl =
-          `${VDO_BASE}/player?url=${encodeURIComponent(url)}`;
+          `${VDO_BASE}/play?url=${encodeURIComponent(url)}`;
         break;
 
       default:
