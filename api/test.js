@@ -23,9 +23,6 @@ export default async function handler(req, res) {
     } = req.query;
 
     const API_BASE = "https://platform.studyparcham.in/api/vibrant";
-    const VDO_BASE = "https://platform.studyparcham.in/study/vibrant";
-
-    
 
     let targetUrl = "";
 
@@ -55,10 +52,10 @@ export default async function handler(req, res) {
           `${API_BASE}/hehe?course_id=${course_id}&parent_id=${parent_id}&content_id=${pdf_id}`;
         break;
 
-      // Player Proxy
+      // Player
       case "player":
         targetUrl =
-          `${VDO_BASE}/play?url=${encodeURIComponent(url)}`;
+          `${API_BASE}/play?url=${encodeURIComponent(url)}`;
         break;
 
       default:
@@ -68,6 +65,9 @@ export default async function handler(req, res) {
         });
     }
 
+    console.log("ACTION:", action);
+    console.log("TARGET:", targetUrl);
+
     const response = await fetch(targetUrl, {
       headers: {
         "accept": "*/*"
@@ -76,12 +76,18 @@ export default async function handler(req, res) {
 
     const contentType = response.headers.get("content-type") || "";
 
-    res.setHeader("Content-Type", contentType);
+    // Forward content type
+    if (contentType) {
+      res.setHeader("Content-Type", contentType);
+    }
+
+    // Forward status
+    res.status(response.status);
 
     if (contentType.includes("application/json")) {
       const data = await response.json();
 
-      return res.status(response.status).json({
+      return res.json({
         success: true,
         source: action,
         data
@@ -89,7 +95,7 @@ export default async function handler(req, res) {
     }
 
     const text = await response.text();
-    return res.status(response.status).send(text);
+    return res.send(text);
 
   } catch (err) {
     return res.status(500).json({
