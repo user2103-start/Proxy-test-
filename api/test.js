@@ -1,15 +1,9 @@
 export default async function handler(req, res) {
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
-  );
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
     const {
@@ -19,8 +13,16 @@ export default async function handler(req, res) {
       video_id,
       pdf_id,
       parent_id,
-      url
-    } = req.query || req.body;
+      url,
+      cf_token
+    } = req.body || req.query;
+
+    if (!cf_token) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Cloudflare token required" 
+      });
+    }
 
     const API_BASE = "https://studybeepro.site/vib";
 
@@ -30,7 +32,8 @@ export default async function handler(req, res) {
       "client-service": "Appx",
       "origin": "https://www.vibrantacademy.com",
       "referer": "https://www.vibrantacademy.com/",
-      "source": "website"
+      "source": "website",
+      "CF-Turnstile-Response": cf_token
     };
 
     let targetUrl = "";
@@ -64,46 +67,25 @@ export default async function handler(req, res) {
         });
     }
 
-    // ✨ BROWSERLESS MAGIC
-    const browserlessResponse = await fetch('https://chrome.browserless.io/json', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        url: targetUrl,
-        rejectResourceTypes: ['image', 'stylesheet', 'font', 'media'],
-        timeout: 30000,
-        waitForFunction: `() => {
-          try {
-            const data = JSON.parse(document.body.innerText);
-            return !!data;
-          } catch {
-            return document.readyState === 'complete';
-          }
-        }`
-      })
+    const response = await fetch(targetUrl, {
+      headers: HEADERS
     });
 
-    if (!browserlessResponse.ok) {
-      throw new Error(`Browserless error: ${browserlessResponse.statusText}`);
+    const contentType = response.headers.get("content-type") || "";
+
+    res.setHeader("Content-Type", contentType);
+
+    if (contentType.includes("application/json")) {
+      const data = await response.json();
+      return res.status(response.status).json({
+        success: true,
+        source: action,
+        data
+      });
     }
 
-    const html = await browserlessResponse.text();
-
-    // Try to extract JSON
-    try {
-      const jsonMatch = html.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const data = JSON.parse(jsonMatch[0]);
-        return res.status(200).json({
-          success: true,
-          source: action,
-          data
-        });
-      }
-    } catch (e) {
-      // Return raw HTML if JSON extraction fails
-      return res.status(200).send(html);
-    }
+    const text = await response.text();
+    return res.status(response.status).send(text);
 
   } catch (err) {
     console.error(err);
