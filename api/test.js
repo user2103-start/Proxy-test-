@@ -23,6 +23,9 @@ export default async function handler(req, res) {
     } = req.query;
 
     const API_BASE = "https://platform.studyparcham.in/api/vibrant";
+    const VDO_BASE = "https://platform.studyparcham.in/study/vibrant";
+
+    
 
     let targetUrl = "";
 
@@ -55,7 +58,7 @@ export default async function handler(req, res) {
       // Player Proxy
       case "player":
         targetUrl =
-          `${API_BASE}/play?url=${encodeURIComponent(url)}`;
+          `${VDO_BASE}/player?url=${encodeURIComponent(url)}`;
         break;
 
       default:
