@@ -6,9 +6,6 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 
-// ============================================
-// CONFIG (yahan change karo agar zarurat ho)
-// ============================================
 const CONFIG = {
   BASE_URL: 'https://vibrantacademykotaapi.akamai.net.in',
   AUTH_KEY: 'appxapi',
@@ -16,16 +13,10 @@ const CONFIG = {
   USER_ID: '179705'
 };
 
-// ============================================
-// APP SETUP
-// ============================================
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ============================================
-// HEADERS
-// ============================================
 const getHeaders = () => ({
   'Accept': 'application/json, text/plain, */*',
   'Auth-Key': CONFIG.AUTH_KEY,
@@ -44,23 +35,16 @@ const getHeaders = () => ({
   'user_app_category': '3'
 });
 
-// ============================================
-// ROUTE 1: Health Check
-// ============================================
+// Health check
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
     message: '🚀 Vibrant Academy Proxy API chal rahi hai',
-    endpoints: {
-      courseContents: '/api/course-contents?course_id={ID}&start=-1&live_status=1,2',
-      genericProxy: '/api/proxy/{any-endpoint}?{query}'
-    }
+    time: new Date().toISOString()
   });
 });
 
-// ============================================
-// ROUTE 2: Course Contents
-// ============================================
+// Course Contents
 app.get('/api/course-contents', async (req, res) => {
   try {
     const { course_id, start = '-1', live_status = '1,2' } = req.query;
@@ -73,79 +57,59 @@ app.get('/api/course-contents', async (req, res) => {
     }
 
     const url = `${CONFIG.BASE_URL}/get/course_contents_by_live_status`;
-    console.log(`[PROXY] ${url} | course_id=${course_id}`);
 
     const response = await axios.get(url, {
       params: { course_id, start, live_status },
       headers: getHeaders(),
-      timeout: 30000
+      timeout: 25000,
+      validateStatus: () => true
     });
 
-    return res.json({
-      success: true,
+    return res.status(response.status).json({
+      success: response.status === 200,
       data: response.data
     });
 
   } catch (error) {
-    console.error('[ERROR]', error.message);
-
-    if (error.response) {
-      return res.status(error.response.status).json({
-        success: false,
-        error: 'Upstream API error',
-        status: error.response.status,
-        details: error.response.data
-      });
-    }
-
+    console.error('[ERROR]', error.message, error.stack);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      code: error.code,
+      hint: error.code === 'ENOTFOUND' ? 'DNS issue' :
+            error.code === 'ETIMEDOUT' ? 'Timeout - server slow' :
+            error.code === 'ECONNREFUSED' ? 'Connection refused' : 'Check Vercel logs'
     });
   }
 });
 
-// ============================================
-// ROUTE 3: Generic Proxy
-// ============================================
+// Generic Proxy
 app.get('/api/proxy/*', async (req, res) => {
   try {
     const path = req.params[0];
     const url = `${CONFIG.BASE_URL}/${path}`;
 
-    console.log(`[PROXY] Generic: ${url}`);
-
     const response = await axios.get(url, {
       params: req.query,
       headers: getHeaders(),
-      timeout: 30000
+      timeout: 25000,
+      validateStatus: () => true
     });
 
-    return res.json({
-      success: true,
+    return res.status(response.status).json({
+      success: response.status === 200,
       data: response.data
     });
 
   } catch (error) {
-    console.error('[ERROR]', error.message);
-
-    if (error.response) {
-      return res.status(error.response.status).json({
-        success: false,
-        error: 'Upstream API error',
-        status: error.response.status,
-        details: error.response.data
-      });
-    }
-
+    console.error('[ERROR]', error.message, error.stack);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
+      code: error.code
     });
   }
 });
 
-// ============================================
-// EXPORT FOR VERCEL (IMPORTANT!)
-// ============================================
+// Vercel handler
 module.exports = app;
