@@ -1,10 +1,7 @@
 // ============================================
 // VIBRANT ACADEMY PROXY - api/proxe.js
+// No dependencies, pure Node.js
 // ============================================
-
-const express = require('express');
-const axios = require('axios');
-const cors = require('cors');
 
 const CONFIG = {
   BASE_URL: 'https://vibrantacademykotaapi.akamai.net.in',
@@ -13,11 +10,7 @@ const CONFIG = {
   USER_ID: '179705'
 };
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-const getHeaders = () => ({
+const HEADERS = {
   'Accept': 'application/json, text/plain, */*',
   'Auth-Key': CONFIG.AUTH_KEY,
   'Authorization': CONFIG.JWT_TOKEN,
@@ -33,74 +26,56 @@ const getHeaders = () => ({
   'sec-ch-ua-platform': '"Android"',
   'source': 'website',
   'user_app_category': '3'
-});
+};
 
-// Health check
-app.get('/', (req, res) => {
-  res.json({ status: 'ok', message: '🚀 Proxy chal rahi hai' });
-});
+module.exports = async (req, res) => {
+  // CORS headers manually
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Content-Type', 'application/json');
 
-// Course contents
-app.get('/api/course-contents', async (req, res) => {
+  // OPTIONS preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   try {
-    const { course_id, start = '-1', live_status = '1,2' } = req.query;
+    // URL se path aur query nikalo
+    const fullUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+    const path = fullUrl.pathname.replace(/^\/api\/proxe/, '') || '/';
+    const query = fullUrl.search;
 
-    if (!course_id) {
-      return res.status(400).json({ success: false, error: 'course_id required' });
+    // Agar path empty hai toh health check
+    if (path === '/' || path === '') {
+      res.status(200).json({
+        status: 'ok',
+        message: '🚀 Proxy chal rahi hai',
+        usage: '/api/proxe/get/course_contents_by_live_status?course_id=123&start=-1&live_status=1,2'
+      });
+      return;
     }
 
-    const url = `${CONFIG.BASE_URL}/get/course_contents_by_live_status`;
+    // Original API ka URL banao
+    const targetUrl = `${CONFIG.BASE_URL}${path}${query}`;
 
-    const response = await axios.get(url, {
-      params: { course_id, start, live_status },
-      headers: getHeaders(),
-      timeout: 25000,
-      validateStatus: () => true
+    // Fetch karo (Node 18+ mein native hai)
+    const response = await fetch(targetUrl, {
+      method: 'GET',
+      headers: HEADERS
     });
 
-    return res.status(response.status).json({
-      success: response.status === 200,
-      upstreamStatus: response.status,
-      data: response.data
-    });
+    const data = await response.text();
+
+    res.status(response.status);
+    res.send(data);
 
   } catch (error) {
-    console.error('[ERROR]', error.message);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: error.message,
-      code: error.code
+      hint: 'Check Vercel logs for details'
     });
   }
-});
-
-// Generic proxy - koi bhi endpoint forward
-app.get('/api/proxy/*', async (req, res) => {
-  try {
-    const path = req.params[0];
-    const url = `${CONFIG.BASE_URL}/${path}`;
-
-    const response = await axios.get(url, {
-      params: req.query,
-      headers: getHeaders(),
-      timeout: 25000,
-      validateStatus: () => true
-    });
-
-    return res.status(response.status).json({
-      success: response.status === 200,
-      upstreamStatus: response.status,
-      data: response.data
-    });
-
-  } catch (error) {
-    console.error('[ERROR]', error.message);
-    return res.status(500).json({
-      success: false,
-      error: error.message,
-      code: error.code
-    });
-  }
-});
-
-module.exports = app;
+};
