@@ -20,8 +20,12 @@ export default async function handler(req, res) {
     url = `${BASE_URL}/get/folder_contentsv3?course_id=${course_id}&parent_id=${parent_id}&start=${start}`;
   } else if (endpoint === "video") {
     url = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`;
+  } else if (endpoint === "watch") {
+    url = `${BASE_URL}/post/watch_videov2`;
+    method = "POST";
+    const liveCourseId = req.query.live_course_id || course_id;
+    body = `course_id=${course_id}&live_course_id=${liveCourseId}&user_id=${USER_ID}&ytFlag=0&folder_wise_course=1`;
   } else if (endpoint === "playback") {
-    // Direct CDN path with authorization bypass
     url = `https://appx-content-v2.classx.co.in/hls/${recording_schedule}/playlist.m3u8`;
     method = "GET";
   } else {
@@ -38,7 +42,8 @@ export default async function handler(req, res) {
         "User-ID": USER_ID,
         "Origin": "https://www.vibrantacademy.com",
         "source": "website",
-        ...(method === "POST" && { "Content-Type": "application/json" })
+        ...(method === "POST" && endpoint === "watch" && { "Content-Type": "application/x-www-form-urlencoded;charset=utf-8" }),
+        ...(method === "POST" && endpoint !== "watch" && { "Content-Type": "application/json" })
       },
       ...(body && { body })
     });
@@ -56,4 +61,4 @@ export default async function handler(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-      }
+}
