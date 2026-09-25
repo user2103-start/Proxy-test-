@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     url = `${BASE_URL}/post/generateTencentWebsitePresignedUrl`;
     method = "POST";
     body = JSON.stringify({
-      filePath: recording_schedule,
+      filePath: `recordings/${recording_schedule}`,
       type: "video"
     });
   } else {
