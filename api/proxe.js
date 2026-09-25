@@ -17,6 +17,7 @@ const headers = {
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -32,7 +33,6 @@ export default async function handler(req, res) {
     } else if (endpoint === "video") {
       url = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}`;
     } else if (endpoint === "playback") {
-      // YE WALA - VIDEO URL GENERATE KARNA
       url = `${BASE_URL}/post/generateTencentWebsitePresignedUrl`;
       method = "POST";
       body = JSON.stringify({
