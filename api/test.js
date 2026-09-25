@@ -1,106 +1,62 @@
 export default async function handler(req, res) {
-  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
-  );
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  const AUTH_KEY = "appxapi";
+  const JWT_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...";
+  const USER_ID = "186608";
+  const BASE_URL = "https://vibrantacademykotaapi.akamai.net.in";
+
+  const { endpoint, course_id, parent_id, video_id, recording_schedule, start = 0 } = req.query;
+
+  let url;
+  let method = "GET";
+  let body = null;
+  let contentType = "application/json";
+
+  if (endpoint === "folders") {
+    url = `${BASE_URL}/get/folder_contentsv3?course_id=${course_id}&parent_id=${parent_id}&start=${start}`;
+  } else if (endpoint === "video") {
+    url = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`;
+  } else if (endpoint === "playback") {
+    url = `${BASE_URL}/post/generateTencentWebsitePresignedUrl`;
+    method = "POST";
+    body = JSON.stringify({
+      filePath: `recordings/${recording_schedule}.m3u8`,
+      type: "video"
+    });
+    contentType = "application/json";   // ✅ Tencent ke liye json, PUT ke liye file type
+  } else {
+    return res.status(400).json({ error: `Invalid endpoint: ${endpoint}` });
   }
 
   try {
-    const {
-      action,
-      course_id,
-      folder_id,
-      video_id,
-      parent_id,
-      pdf_id,
-      url
-    } = req.query;
-
-    const API_BASE = "https://platform.studyparcham.in/api/vibrant";
-
-    let targetUrl = "";
-
-    switch (action) {
-
-      // Root Content
-      case "root":
-        targetUrl =
-          `${API_BASE}/course?course_id=${course_id}&parent_id=-1&start=0`;
-        break;
-
-      // Folder Content
-      case "folder":
-        targetUrl =
-          `${API_BASE}/course?course_id=${course_id}&parent_id=${folder_id}&start=0`;
-        break;
-
-      // Video Details
-      case "video":
-        targetUrl =
-          `${API_BASE}/videopower?course_id=${course_id}&video_id=${video_id}`;
-        break;
-
-      // PDF Details
-      case "pdf":
-        targetUrl =
-          `${API_BASE}/hehe?course_id=${course_id}&parent_id=${parent_id}&content_id=${pdf_id}`;
-        break;
-
-      // Player
-      case "player":
-        targetUrl =
-          `${API_BASE}/play?url=${encodeURIComponent(url)}`;
-        break;
-
-      default:
-        return res.status(400).json({
-          success: false,
-          message: "Invalid action"
-        });
-    }
-
-    console.log("ACTION:", action);
-    console.log("TARGET:", targetUrl);
-
-    const response = await fetch(targetUrl, {
+    const response = await fetch(url, {
+      method,
       headers: {
-        "accept": "*/*"
-      }
+        "Auth-Key": AUTH_KEY,
+        "Authorization": JWT_TOKEN,
+        "Client-Service": "Appx",
+        "User-ID": USER_ID,
+        "Origin": "https://www.vibrantacademy.com",
+        "Referer": "https://www.vibrantacademy.com/",          // ✅ ADD
+        "source": "website",
+        "Accept": "application/json, text/plain, */*",          // ✅ ADD
+        "Accept-Language": "en-US,en;q=0.9",                     // ✅ ADD
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",  // ✅ ADD
+        "Content-Type": contentType,
+        ...(req.headers.cookie && { "Cookie": req.headers.cookie })  // ✅ ADD
+      },
+      ...(body && { body })
     });
 
-    const contentType = response.headers.get("content-type") || "";
-
-    // Forward content type
-    if (contentType) {
-      res.setHeader("Content-Type", contentType);
-    }
-
-    // Forward status
-    res.status(response.status);
-
-    if (contentType.includes("application/json")) {
-      const data = await response.json();
-
-      return res.json({
-        success: true,
-        source: action,
-        data
-      });
-    }
-
-    const text = await response.text();
-    return res.send(text);
-
-  } catch (err) {
-    return res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    const data = await response.json();
+    res.status(response.status).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 }
