@@ -1,5 +1,5 @@
 // ============================================
-// VIBRANT ACADEMY PROXY API - VERCEL READY
+// VIBRANT ACADEMY PROXY - api/proxe.js
 // ============================================
 
 const express = require('express');
@@ -37,23 +37,16 @@ const getHeaders = () => ({
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({
-    status: 'ok',
-    message: '🚀 Vibrant Academy Proxy API chal rahi hai',
-    time: new Date().toISOString()
-  });
+  res.json({ status: 'ok', message: '🚀 Proxy chal rahi hai' });
 });
 
-// Course Contents
+// Course contents
 app.get('/api/course-contents', async (req, res) => {
   try {
     const { course_id, start = '-1', live_status = '1,2' } = req.query;
 
     if (!course_id) {
-      return res.status(400).json({
-        success: false,
-        error: 'course_id query parameter required hai'
-      });
+      return res.status(400).json({ success: false, error: 'course_id required' });
     }
 
     const url = `${CONFIG.BASE_URL}/get/course_contents_by_live_status`;
@@ -67,23 +60,21 @@ app.get('/api/course-contents', async (req, res) => {
 
     return res.status(response.status).json({
       success: response.status === 200,
+      upstreamStatus: response.status,
       data: response.data
     });
 
   } catch (error) {
-    console.error('[ERROR]', error.message, error.stack);
+    console.error('[ERROR]', error.message);
     return res.status(500).json({
       success: false,
       error: error.message,
-      code: error.code,
-      hint: error.code === 'ENOTFOUND' ? 'DNS issue' :
-            error.code === 'ETIMEDOUT' ? 'Timeout - server slow' :
-            error.code === 'ECONNREFUSED' ? 'Connection refused' : 'Check Vercel logs'
+      code: error.code
     });
   }
 });
 
-// Generic Proxy
+// Generic proxy - koi bhi endpoint forward
 app.get('/api/proxy/*', async (req, res) => {
   try {
     const path = req.params[0];
@@ -98,11 +89,12 @@ app.get('/api/proxy/*', async (req, res) => {
 
     return res.status(response.status).json({
       success: response.status === 200,
+      upstreamStatus: response.status,
       data: response.data
     });
 
   } catch (error) {
-    console.error('[ERROR]', error.message, error.stack);
+    console.error('[ERROR]', error.message);
     return res.status(500).json({
       success: false,
       error: error.message,
@@ -111,5 +103,4 @@ app.get('/api/proxy/*', async (req, res) => {
   }
 });
 
-// Vercel handler
 module.exports = app;
