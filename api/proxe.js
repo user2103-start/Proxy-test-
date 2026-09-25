@@ -1,8 +1,7 @@
-// api/proxy.js
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
@@ -13,8 +12,6 @@ export default async function handler(req, res) {
 
   const { endpoint, course_id, parent_id, video_id, recording_schedule, start = 0 } = req.query;
 
-  console.log("DEBUG - endpoint:", endpoint, "course_id:", course_id);
-
   let url;
   let method = "GET";
   let body = null;
@@ -22,7 +19,7 @@ export default async function handler(req, res) {
   if (endpoint === "folders") {
     url = `${BASE_URL}/get/folder_contentsv3?course_id=${course_id}&parent_id=${parent_id}&start=${start}`;
   } else if (endpoint === "video") {
-    url = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}`;
+    url = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`;
   } else if (endpoint === "playback") {
     url = `${BASE_URL}/post/generateTencentWebsitePresignedUrl`;
     method = "POST";
