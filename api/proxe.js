@@ -5,30 +5,42 @@ const JWT_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6IjE4NjYwOCIsInRp
 const USER_ID = "186608";
 const BASE_URL = "https://vibrantacademykotaapi.akamai.net.in/get";
 
+const headers = {
+  "Auth-Key": AUTH_KEY,
+  "Authorization": JWT_TOKEN,
+  "Client-Service": "Appx",
+  "User-ID": USER_ID,
+  "Origin": "https://www.vibrantacademy.com",
+  "source": "website"
+};
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { endpoint = "folder_contentsv3", course_id = 37, parent_id = -1, start = 0 } = req.query;
+  const { endpoint, course_id, parent_id, video_id, start = 0, ytflag = 0, folder_wise_course = 1 } = req.query;
+
+  if (!endpoint) {
+    return res.status(400).json({ error: "Missing endpoint parameter" });
+  }
 
   try {
-    const url = new URL(`${BASE_URL}/${endpoint}`);
-    url.searchParams.append("course_id", course_id);
-    url.searchParams.append("parent_id", parent_id);
-    url.searchParams.append("start", start);
+    let url;
 
-    const response = await fetch(url.toString(), {
+    if (endpoint === "folders") {
+      url = `${BASE_URL}/folder_contentsv3?course_id=${course_id}&parent_id=${parent_id}&start=${start}`;
+    } else if (endpoint === "video") {
+      url = `${BASE_URL}/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=${ytflag}&folder_wise_course=${folder_wise_course}`;
+    } else {
+      return res.status(400).json({ error: "Invalid endpoint" });
+    }
+
+    const response = await fetch(url, {
       method: "GET",
-      headers: {
-        "Auth-Key": AUTH_KEY,
-        "Authorization": JWT_TOKEN,
-        "Client-Service": "Appx",
-        "User-ID": USER_ID,
-        "Origin": "https://www.vibrantacademy.com",
-        "source": "website"
-      }
+      headers
     });
 
     const data = await response.json();
