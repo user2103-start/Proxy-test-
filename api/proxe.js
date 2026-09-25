@@ -40,6 +40,7 @@ export default async function handler(req, res) {
         "Client-Service": "Appx",
         "User-ID": USER_ID,
         "Origin": "https://www.vibrantacademy.com",
+        "referer": "https://www.vibrantacademy.com/",
         "source": "website",
         ...(method === "POST" && { "Content-Type": "application/json" })
       },
