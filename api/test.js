@@ -16,9 +16,11 @@ export default async function handler(req, res) {
     "Client-Service": "Appx",
     "User-ID": USER_ID,
     "Origin": "https://www.vibrantacademy.com",
-    "Referer": "https://www.vibrantacademy.com/course/7",
+    "Referer": "https://www.vibrantacademy.com/course/8",
     "source": "website",
-    "is-safari": "0"
+    "is-safari": "0",
+    "rzp_unified_session_id": "Tgc6WViQmcJ1DQ",
+    "Cookie": "_fbp=fb.1.1790326289072.283117334803054975; rzp_unified_session_id=Tgc6WViQmcJ1DQ"
   };
 
   const { endpoint, course_id, parent_id, video_id, live_course_id, recording_schedule, userid, start = 0 } = req.query;
