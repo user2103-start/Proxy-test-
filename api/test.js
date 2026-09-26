@@ -49,7 +49,54 @@ export default async function handler(req, res) {
       type: "video"
     });
   }
-  else if (endpoint === "extract") {
+  else if (endpoint === "signed") {
+    // Generate signed URL with edge-cache-token
+    // Call fetchVideoDetailsById with transcoded URL as video_id parameter
+    const quality = req.query.quality || "480p";
+    const videoId = req.query.video_id;
+    const recordingSchedule = req.query.recording_schedule;
+    
+    if (!videoId || !recordingSchedule) {
+      return res.status(400).json({ 
+        error: "video_id and recording_schedule required",
+        example: "?endpoint=signed&video_id=10336&recording_schedule=T_179007939295930249&quality=480p"
+      });
+    }
+
+    // Construct transcoded URL
+    const transcodedUrl = `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${videoId}-${req.query.strtotime}/hls-3cc0c0/${quality}/master-7551762.148271515.m3u8`;
+    
+    try {
+      const signedResponse = await fetch(
+        `${BASE_URL}/get/fetchVideoDetailsById?video_id=${encodeURIComponent(transcodedUrl)}&course_id=${course_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`,
+        {
+          method: "GET",
+          headers: {
+            "Auth-Key": AUTH_KEY,
+            "Authorization": JWT_TOKEN,
+            "Client-Service": "Appx",
+            "User-ID": USER_ID,
+            "Origin": "https://www.vibrantacademy.com",
+            "source": "website"
+          }
+        }
+      );
+
+      const signedData = await signedResponse.json();
+      
+      // API might return signed URL in response or error message contains it
+      res.status(signedResponse.status).json({
+        status: signedResponse.status,
+        quality: quality,
+        transcoded_url: transcodedUrl,
+        api_response: signedData,
+        note: "Check API response for signed URL with edge-cache-token"
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+    return;
+  }
     // First fetch video details, then extract and construct URLs
     const videoUrl = `${BASE_URL}/get/fetchVideoDetailsById?course_id=${course_id}&video_id=${video_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`;
     
@@ -152,7 +199,7 @@ export default async function handler(req, res) {
   else {
     return res.status(400).json({ 
       error: "Invalid endpoint",
-      valid_endpoints: ["folders", "video", "watch", "playback", "presigned", "extract", "stream"]
+      valid_endpoints: ["folders", "video", "watch", "playback", "presigned", "extract", "signed", "stream"]
     });
   }
 
@@ -192,4 +239,4 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
   }
-  }
+        }
