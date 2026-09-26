@@ -50,51 +50,29 @@ export default async function handler(req, res) {
     });
   }
   else if (endpoint === "signed") {
-    // Generate signed URL with edge-cache-token
-    // Call fetchVideoDetailsById with transcoded URL as video_id parameter
-    const quality = req.query.quality || "480p";
+    // Generate signed URL parameters
     const videoId = req.query.video_id;
-    const recordingSchedule = req.query.recording_schedule;
+    const quality = req.query.quality || "480p";
+    const strtotime = req.query.strtotime;
     
-    if (!videoId || !recordingSchedule) {
+    if (!videoId || !strtotime) {
       return res.status(400).json({ 
-        error: "video_id and recording_schedule required",
-        example: "?endpoint=signed&video_id=10336&recording_schedule=T_179007939295930249&quality=480p"
+        error: "video_id and strtotime required",
+        example: "?endpoint=signed&video_id=10336&strtotime=1790080200&quality=480p"
       });
     }
 
-    // Construct transcoded URL
-    const transcodedUrl = `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${videoId}-${req.query.strtotime}/hls-3cc0c0/${quality}/master-7551762.148271515.m3u8`;
+    // Construct the transcoded URL that needs signing
+    const transcodedUrl = `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${videoId}-${strtotime}/${quality}/master.m3u8`;
     
-    try {
-      const signedResponse = await fetch(
-        `${BASE_URL}/get/fetchVideoDetailsById?video_id=${encodeURIComponent(transcodedUrl)}&course_id=${course_id}&ytflag=0&folder_wise_course=1&lc_app_api_url=`,
-        {
-          method: "GET",
-          headers: {
-            "Auth-Key": AUTH_KEY,
-            "Authorization": JWT_TOKEN,
-            "Client-Service": "Appx",
-            "User-ID": USER_ID,
-            "Origin": "https://www.vibrantacademy.com",
-            "source": "website"
-          }
-        }
-      );
-
-      const signedData = await signedResponse.json();
-      
-      // API might return signed URL in response or error message contains it
-      res.status(signedResponse.status).json({
-        status: signedResponse.status,
-        quality: quality,
-        transcoded_url: transcodedUrl,
-        api_response: signedData,
-        note: "Check API response for signed URL with edge-cache-token"
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
+    // Return URL construction info (actual signing happens server-side)
+    res.status(200).json({
+      status: 200,
+      video_id: videoId,
+      quality: quality,
+      transcoded_url: transcodedUrl,
+      note: "URL ready for signing. Call /post/generateTencentWebsitePresignedUrl with filePath parameter for edge-cache-token"
+    });
     return;
   }
     // First fetch video details, then extract and construct URLs
@@ -163,14 +141,15 @@ export default async function handler(req, res) {
           iv_string: video.iv_string
         },
         
-        // Constructed URLs based on patterns - Multiple Qualities
+        // Constructed URLs based on patterns - Multiple Qualities (CORRECT SERVER)
         constructed_urls: {
-          hls_direct: `https://appx-content-v2.classx.co.in/hls/${video.recording_schedule}/playlist.m3u8`,
-          transcoded_240p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/240p/master.m3u8`,
-          transcoded_360p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/360p/master.m3u8`,
-          transcoded_480p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/480p/master.m3u8`,
-          transcoded_720p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/720p/master.m3u8`,
-          transcoded_1080p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/1080p/master.m3u8`
+          hls_direct: `https://appx-transcoded-videos.classx.co.in/videos/${video.id}-${video.strtotime}/hls/master.m3u8`,
+          manual_hls: `https://appx-transcoded-videos.classx.co.in/manual4.m3u8`,
+          transcoded_240p: `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/240p/master.m3u8`,
+          transcoded_360p: `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/360p/master.m3u8`,
+          transcoded_480p: `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/480p/master.m3u8`,
+          transcoded_720p: `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/720p/master.m3u8`,
+          transcoded_1080p: `https://appx-transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/1080p/master.m3u8`
         }
       };
 
@@ -239,4 +218,4 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
   }
-        }
+                         }
