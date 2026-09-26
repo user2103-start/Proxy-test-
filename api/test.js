@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     "source": "website"
   };
 
-  const { endpoint, course_id, parent_id, video_id, live_course_id, start = 0 } = req.query;
+  const { endpoint, course_id, parent_id, video_id, live_course_id, recording_schedule, userid, start = 0 } = req.query;
 
   let url;
   let method = "GET";
@@ -62,11 +62,25 @@ export default async function handler(req, res) {
       });
       contentType = "application/json";
     }
+    // GET LIVE VIEW DATA (Firebase Realtime DB)
+    else if (endpoint === "livedata") {
+      const schedule = recording_schedule || req.query.schedule;
+      const uid = userid || USER_ID;
+      
+      if (!schedule) {
+        return res.status(400).json({ 
+          error: "recording_schedule parameter required",
+          example: "?endpoint=livedata&recording_schedule=T_177434780170759638&userid=217527"
+        });
+      }
+      
+      url = `${BASE_URL}/LiveViewData/${schedule}/${uid}`;
+    }
     // INVALID ENDPOINT
     else {
       return res.status(400).json({ 
         error: "Invalid endpoint",
-        valid_endpoints: ["folders", "video", "watch", "getsigned"]
+        valid_endpoints: ["folders", "video", "watch", "getsigned", "livedata"]
       });
     }
 
