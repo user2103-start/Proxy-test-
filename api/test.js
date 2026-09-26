@@ -116,11 +116,14 @@ export default async function handler(req, res) {
           iv_string: video.iv_string
         },
         
-        // Constructed URLs based on patterns
+        // Constructed URLs based on patterns - Multiple Qualities
         constructed_urls: {
           hls_direct: `https://appx-content-v2.classx.co.in/hls/${video.recording_schedule}/playlist.m3u8`,
+          transcoded_240p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/240p/master.m3u8`,
+          transcoded_360p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/360p/master.m3u8`,
           transcoded_480p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/480p/master.m3u8`,
-          transcoded_720p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/720p/master.m3u8`
+          transcoded_720p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/720p/master.m3u8`,
+          transcoded_1080p: `https://transcoded-videos.classx.co.in/videos/vibrantacademykota-data/${video.id}-${video.strtotime}/1080p/master.m3u8`
         }
       };
 
@@ -189,4 +192,4 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString()
     });
   }
-}
+  }
