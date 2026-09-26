@@ -16,7 +16,9 @@ export default async function handler(req, res) {
     "Client-Service": "Appx",
     "User-ID": USER_ID,
     "Origin": "https://www.vibrantacademy.com",
-    "source": "website"
+    "Referer": "https://www.vibrantacademy.com/course/7",
+    "source": "website",
+    "is-safari": "0"
   };
 
   const { endpoint, course_id, parent_id, video_id, live_course_id, recording_schedule, userid, start = 0 } = req.query;
