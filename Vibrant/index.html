@@ -1376,12 +1376,23 @@ async function downloadHls(playlistUrl, name) {
     const m = ssModal(`<div style="font-weight:600;margin-bottom:0.6rem;">Downloading...</div>
         <div style="background:var(--bg-primary);border-radius:10px;height:10px;overflow:hidden;"><div id="ss-bar" style="height:100%;width:0%;background:var(--accent-red);transition:width .2s;"></div></div>
         <div id="ss-pct" style="margin-top:0.5rem;color:var(--text-muted);">0%</div>
+        ${ssBtn('Background me chalao', 'ss-bg')}
         <button id="ss-cancel" style="margin-top:0.8rem;background:none;border:none;color:var(--text-muted);cursor:pointer;">Cancel</button>`);
-    m.querySelector('#ss-cancel').onclick = () => { cancelled = true; closeSsModal(); };
+    let pill = null;
+    const cancel = () => { cancelled = true; closeSsModal(); if (pill) pill.remove(); };
+    m.querySelector('#ss-cancel').onclick = cancel;
+    m.querySelector('#ss-bg').onclick = () => {
+        closeSsModal();
+        pill = document.createElement('div');
+        pill.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:9998;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--card-shadow);padding:0.6rem 0.9rem;font-size:0.85rem;display:flex;gap:0.6rem;align-items:center;';
+        pill.innerHTML = `<span>⬇ <span id="ss-pill-pct">...</span></span><button style="background:none;border:none;color:var(--text-muted);cursor:pointer;">✕</button>`;
+        pill.querySelector('button').onclick = cancel;
+        document.body.appendChild(pill);
+    };
+    const fmt = b => (b / 1048576).toFixed(1) + ' MB';
     try {
         let url = playlistUrl;
         let text = await (await fetch(url)).text();
-        // Agar master playlist hai to pehla variant lo
         if (text.includes('#EXT-X-STREAM-INF')) {
             const lines = text.split('\n').map(l => l.trim());
             const idx = lines.findIndex(l => l.startsWith('#EXT-X-STREAM-INF'));
@@ -1391,20 +1402,29 @@ async function downloadHls(playlistUrl, name) {
         }
         const segs = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => new URL(l, url).href);
         if (!segs.length) throw new Error('No segments');
-        const parts = [];
-        for (let i = 0; i < segs.length; i++) {
-            if (cancelled) return;
-            let res, tries = 0;
-            while (true) {
-                try { res = await fetch(segs[i]); if (res.ok) break; } catch (e) {}
-                if (++tries >= 3) throw new Error('Segment ' + (i + 1) + ' failed');
+        const parts = new Array(segs.length);
+        let done = 0, bytes = 0, next = 0;
+        const fetchSeg = async (i) => {
+            for (let tries = 0; tries < 4; tries++) {
+                if (cancelled) return;
+                try { const res = await fetch(segs[i]); if (res.ok) return await res.arrayBuffer(); } catch (e) {}
             }
-            parts.push(await res.arrayBuffer());
-            const pct = Math.round(((i + 1) / segs.length) * 100);
-            const bar = document.getElementById('ss-bar'); const p = document.getElementById('ss-pct');
-            if (bar) bar.style.width = pct + '%';
-            if (p) p.innerText = `${pct}% (${i + 1}/${segs.length})`;
-        }
+            throw new Error('Part ' + (i + 1) + ' failed');
+        };
+        const worker = async () => {
+            while (!cancelled && next < segs.length) {
+                const i = next++;
+                const buf = await fetchSeg(i);
+                if (cancelled) return;
+                parts[i] = buf; done++; bytes += buf.byteLength;
+                const pct = Math.round((done / segs.length) * 100);
+                const bar = document.getElementById('ss-bar'); const p = document.getElementById('ss-pct'); const pp = document.getElementById('ss-pill-pct');
+                if (bar) bar.style.width = pct + '%';
+                if (p) p.innerText = `${pct}% • ${fmt(bytes)}`;
+                if (pp) pp.innerText = `${pct}% • ${fmt(bytes)}`;
+            }
+        };
+        await Promise.all(Array.from({length: 6}, worker));
         if (cancelled) return;
         const blob = new Blob(parts, {type: 'video/mp2t'});
         const a = document.createElement('a');
@@ -1414,9 +1434,9 @@ async function downloadHls(playlistUrl, name) {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-        closeSsModal();
+        closeSsModal(); if (pill) pill.remove();
     } catch (e) {
-        closeSsModal();
+        closeSsModal(); if (pill) pill.remove();
         if (!cancelled) alert('Download failed: ' + e.message);
     }
 }
