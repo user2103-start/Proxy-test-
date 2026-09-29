@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1250,7 +1249,7 @@ function handleItemClick(item, itemTitle) {
     if (type === 'FOLDER') {
         loadFolders(item.id, itemTitle);
     } else if (type === 'VIDEO') {
-        playVideo(item.id, itemTitle);
+        showVideoChoice(item.id, itemTitle);
     } else if (type === 'IMAGE') {
         if (item.thumbnail) window.open(item.thumbnail, '_blank');
     } else {
@@ -1261,18 +1260,13 @@ function handleItemClick(item, itemTitle) {
 // ========== PDF ==========
 async function openDocument(itemId, parentId) {
     try {
-        const payload = await getVibe('pdf', {
-            pdf_id: itemId,
-            course_id: currentCourseId,
-            parent_id: parentId || currentFolderId
-        });
-        const pdfData = payload && payload.data;
-        let viewerUrl = typeof pdfData === 'string'
-            ? pdfData
-            : (pdfData && (pdfData.pdf_viewer || pdfData.url || (pdfData.data && (pdfData.data.pdf_viewer || pdfData.data.url)))) || '';
-        viewerUrl = String(viewerUrl).trim().replace(/^"|"$/g, '');
+        // PDF API JSON nahi, direct URL deti hai — isliye /api/vibe nahi,
+        // worker ke /proxy route se raw text URL lete hain
+        const pdfApiUrl = `https://vibrant-live-api.lovable.app/api/v1/vibrant/pdf?pdf_id=${encodeURIComponent(itemId)}&course_id=${encodeURIComponent(currentCourseId)}&parent_id=${encodeURIComponent(parentId || currentFolderId || 0)}`;
+        const res = await fetch(`${WORKER_PROXY}?url=${encodeURIComponent(pdfApiUrl)}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const viewerUrl = (await res.text()).trim().replace(/^"|"$/g, '');
         if (viewerUrl.startsWith('http')) {
-            // FIX: Direct open without about:blank to preserve referrer and cookies
             window.open(viewerUrl, '_blank');
         } else {
             throw new Error('No viewer url');
@@ -1329,6 +1323,101 @@ function changeVideoQuality() {
     if (currentVideoSources[selectedQuality]) {
         const currentTime = videoPlayer.currentTime;
         initHLSPlayer(currentVideoSources[selectedQuality], currentTime);
+    }
+}
+
+// ========== VIDEO DOWNLOAD ==========
+function ssModal(innerHtml) {
+    const old = document.getElementById('ss-modal');
+    if (old) old.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'ss-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem;';
+    overlay.innerHTML = `<div style="background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:24px;box-shadow:var(--card-shadow);padding:1.5rem;width:100%;max-width:360px;text-align:center;">${innerHtml}</div>`;
+    document.body.appendChild(overlay);
+    return overlay;
+}
+function ssBtn(label, id) {
+    return `<button id="${id}" style="display:block;width:100%;margin-top:0.7rem;padding:0.8rem;border:1px solid var(--glass-border);border-radius:14px;background:var(--accent-red);color:var(--text-primary);font-size:1rem;cursor:pointer;">${label}</button>`;
+}
+function closeSsModal() { const m = document.getElementById('ss-modal'); if (m) m.remove(); }
+
+function showVideoChoice(videoId, title) {
+    const m = ssModal(`<div style="font-weight:600;margin-bottom:0.5rem;">${esc(title)}</div>
+        ${ssBtn('▶ Watch', 'ss-watch')}${ssBtn('⬇ Download', 'ss-dl')}
+        <button id="ss-cancel" style="margin-top:0.8rem;background:none;border:none;color:var(--text-muted);cursor:pointer;">Cancel</button>`);
+    m.querySelector('#ss-watch').onclick = () => { closeSsModal(); playVideo(videoId, title); };
+    m.querySelector('#ss-dl').onclick = () => showDownloadQualities(videoId, title);
+    m.querySelector('#ss-cancel').onclick = closeSsModal;
+}
+
+async function showDownloadQualities(videoId, title) {
+    ssModal('<div class="loader">Loading qualities...</div>');
+    try {
+        const payload = await getVibe('video', {video_id: videoId, course_id: currentCourseId});
+        const qualities = (payload && payload.data && Array.isArray(payload.data.qualities)) ? payload.data.qualities : [];
+        const sources = {};
+        qualities.forEach(q => { if (q && q.quality && q.url) sources[String(parseInt(q.quality, 10))] = playerUrlFor(q.url); });
+        const keys = Object.keys(sources).sort((a, b) => parseInt(b) - parseInt(a));
+        if (!keys.length) { closeSsModal(); alert('Video stream unavailable.'); return; }
+        const m = ssModal(`<div style="font-weight:600;margin-bottom:0.3rem;">Select Quality</div>
+            ${keys.map(k => ssBtn(k + 'p', 'ss-q-' + k)).join('')}
+            <button id="ss-cancel" style="margin-top:0.8rem;background:none;border:none;color:var(--text-muted);cursor:pointer;">Cancel</button>`);
+        keys.forEach(k => { m.querySelector('#ss-q-' + k).onclick = () => downloadHls(sources[k], `${title} ${k}p`); });
+        m.querySelector('#ss-cancel').onclick = closeSsModal;
+    } catch (e) {
+        closeSsModal();
+        alert('Unable to load video qualities.');
+    }
+}
+
+async function downloadHls(playlistUrl, name) {
+    let cancelled = false;
+    const m = ssModal(`<div style="font-weight:600;margin-bottom:0.6rem;">Downloading...</div>
+        <div style="background:var(--bg-primary);border-radius:10px;height:10px;overflow:hidden;"><div id="ss-bar" style="height:100%;width:0%;background:var(--accent-red);transition:width .2s;"></div></div>
+        <div id="ss-pct" style="margin-top:0.5rem;color:var(--text-muted);">0%</div>
+        <button id="ss-cancel" style="margin-top:0.8rem;background:none;border:none;color:var(--text-muted);cursor:pointer;">Cancel</button>`);
+    m.querySelector('#ss-cancel').onclick = () => { cancelled = true; closeSsModal(); };
+    try {
+        let url = playlistUrl;
+        let text = await (await fetch(url)).text();
+        // Agar master playlist hai to pehla variant lo
+        if (text.includes('#EXT-X-STREAM-INF')) {
+            const lines = text.split('\n').map(l => l.trim());
+            const idx = lines.findIndex(l => l.startsWith('#EXT-X-STREAM-INF'));
+            const variant = lines.slice(idx + 1).find(l => l && !l.startsWith('#'));
+            url = new URL(variant, url).href;
+            text = await (await fetch(url)).text();
+        }
+        const segs = text.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#')).map(l => new URL(l, url).href);
+        if (!segs.length) throw new Error('No segments');
+        const parts = [];
+        for (let i = 0; i < segs.length; i++) {
+            if (cancelled) return;
+            let res, tries = 0;
+            while (true) {
+                try { res = await fetch(segs[i]); if (res.ok) break; } catch (e) {}
+                if (++tries >= 3) throw new Error('Segment ' + (i + 1) + ' failed');
+            }
+            parts.push(await res.arrayBuffer());
+            const pct = Math.round(((i + 1) / segs.length) * 100);
+            const bar = document.getElementById('ss-bar'); const p = document.getElementById('ss-pct');
+            if (bar) bar.style.width = pct + '%';
+            if (p) p.innerText = `${pct}% (${i + 1}/${segs.length})`;
+        }
+        if (cancelled) return;
+        const blob = new Blob(parts, {type: 'video/mp2t'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name.replace(/[\\/:*?"<>|]/g, '_') + '.ts';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+        closeSsModal();
+    } catch (e) {
+        closeSsModal();
+        if (!cancelled) alert('Download failed: ' + e.message);
     }
 }
 
