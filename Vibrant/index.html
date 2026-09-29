@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1371,24 +1371,43 @@ async function showDownloadQualities(videoId, title) {
     }
 }
 
+// Multi-download manager: har download ka apna card, naam ke saath
+let dlSeq = 0;
+function getDlPanel() {
+    let panel = document.getElementById('ss-dl-panel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'ss-dl-panel';
+        panel.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:9998;display:flex;flex-direction:column;gap:0.5rem;max-width:min(320px,90vw);';
+        document.body.appendChild(panel);
+    }
+    return panel;
+}
+function removeDlCard(id) {
+    const c = document.getElementById('ss-dl-' + id);
+    if (c) c.remove();
+    const panel = document.getElementById('ss-dl-panel');
+    if (panel && !panel.children.length) panel.remove();
+}
+
 async function downloadHls(playlistUrl, name) {
+    closeSsModal();
+    const id = ++dlSeq;
     let cancelled = false;
-    const m = ssModal(`<div style="font-weight:600;margin-bottom:0.6rem;">Downloading...</div>
-        <div style="background:var(--bg-primary);border-radius:10px;height:10px;overflow:hidden;"><div id="ss-bar" style="height:100%;width:0%;background:var(--accent-red);transition:width .2s;"></div></div>
-        <div id="ss-pct" style="margin-top:0.5rem;color:var(--text-muted);">0%</div>
-        ${ssBtn('Background me chalao', 'ss-bg')}
-        <button id="ss-cancel" style="margin-top:0.8rem;background:none;border:none;color:var(--text-muted);cursor:pointer;">Cancel</button>`);
-    let pill = null;
-    const cancel = () => { cancelled = true; closeSsModal(); if (pill) pill.remove(); };
-    m.querySelector('#ss-cancel').onclick = cancel;
-    m.querySelector('#ss-bg').onclick = () => {
-        closeSsModal();
-        pill = document.createElement('div');
-        pill.style.cssText = 'position:fixed;right:1rem;bottom:1rem;z-index:9998;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--card-shadow);padding:0.6rem 0.9rem;font-size:0.85rem;display:flex;gap:0.6rem;align-items:center;';
-        pill.innerHTML = `<span>⬇ <span id="ss-pill-pct">...</span></span><button style="background:none;border:none;color:var(--text-muted);cursor:pointer;">✕</button>`;
-        pill.querySelector('button').onclick = cancel;
-        document.body.appendChild(pill);
-    };
+    const panel = getDlPanel();
+    const card = document.createElement('div');
+    card.id = 'ss-dl-' + id;
+    card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--glass-border);border-radius:14px;box-shadow:var(--card-shadow);padding:0.7rem 0.9rem;font-size:0.85rem;';
+    card.innerHTML = `<div style="display:flex;justify-content:space-between;gap:0.6rem;align-items:center;">
+            <span style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;" title="${esc(name)}">⬇ ${esc(name)}</span>
+            <button class="ss-dl-x" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;">✕</button>
+        </div>
+        <div style="background:var(--bg-primary);border-radius:8px;height:8px;overflow:hidden;margin-top:0.5rem;"><div class="ss-dl-bar" style="height:100%;width:0%;background:var(--accent-red);transition:width .2s;"></div></div>
+        <div class="ss-dl-pct" style="margin-top:0.35rem;color:var(--text-muted);">0%</div>`;
+    panel.appendChild(card);
+    card.querySelector('.ss-dl-x').onclick = () => { cancelled = true; removeDlCard(id); };
+    const bar = card.querySelector('.ss-dl-bar');
+    const pctEl = card.querySelector('.ss-dl-pct');
     const fmt = b => (b / 1048576).toFixed(1) + ' MB';
     try {
         let url = playlistUrl;
@@ -1418,14 +1437,13 @@ async function downloadHls(playlistUrl, name) {
                 if (cancelled) return;
                 parts[i] = buf; done++; bytes += buf.byteLength;
                 const pct = Math.round((done / segs.length) * 100);
-                const bar = document.getElementById('ss-bar'); const p = document.getElementById('ss-pct'); const pp = document.getElementById('ss-pill-pct');
-                if (bar) bar.style.width = pct + '%';
-                if (p) p.innerText = `${pct}% • ${fmt(bytes)}`;
-                if (pp) pp.innerText = `${pct}% • ${fmt(bytes)}`;
+                bar.style.width = pct + '%';
+                pctEl.innerText = `${pct}% • ${fmt(bytes)}`;
             }
         };
         await Promise.all(Array.from({length: 6}, worker));
         if (cancelled) return;
+        pctEl.innerText = 'Saving...';
         const blob = new Blob(parts, {type: 'video/mp2t'});
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -1434,10 +1452,14 @@ async function downloadHls(playlistUrl, name) {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 60000);
-        closeSsModal(); if (pill) pill.remove();
+        pctEl.innerText = '✅ Done • ' + fmt(bytes);
+        bar.style.width = '100%';
+        setTimeout(() => removeDlCard(id), 8000);
     } catch (e) {
-        closeSsModal(); if (pill) pill.remove();
-        if (!cancelled) alert('Download failed: ' + e.message);
+        if (!cancelled) {
+            pctEl.innerText = '❌ Failed: ' + e.message;
+            setTimeout(() => removeDlCard(id), 8000);
+        }
     }
 }
 
