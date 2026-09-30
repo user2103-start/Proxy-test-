@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1212,8 +1212,7 @@ async function loadFolders(folderId, titleStr = null) {
                 card.className = 'course-card image-card';
                 card.innerHTML = `
                     <img class="card-image" src="${esc(item.thumbnail)}" alt="${esc(title)}" loading="lazy">
-                    <div class="course-name">${esc(title)}</div>
-                `;
+                 `;
                 contentGrid.appendChild(card);
                 return;
             }
@@ -1409,6 +1408,20 @@ async function downloadHls(playlistUrl, name) {
     const bar = card.querySelector('.ss-dl-bar');
     const pctEl = card.querySelector('.ss-dl-pct');
     const fmt = b => (b / 1048576).toFixed(1) + ' MB';
+    // Notification: 0% se 100% tak status notification bar me
+    let notifOk = false;
+    try {
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') notifOk = true;
+            else if (Notification.permission === 'default') notifOk = (await Notification.requestPermission()) === 'granted';
+        }
+    } catch (e) {}
+    let lastNotifPct = -1;
+    const notify = (body) => {
+        if (!notifOk) return;
+        try { new Notification('⬇ ' + name, { body: body, tag: 'ss-dl-' + id, silent: true }); } catch (e) {}
+    };
+    notify('Download shuru...');
     try {
         let url = playlistUrl;
         let text = await (await fetch(url)).text();
@@ -1439,6 +1452,7 @@ async function downloadHls(playlistUrl, name) {
                 const pct = Math.round((done / segs.length) * 100);
                 bar.style.width = pct + '%';
                 pctEl.innerText = `${pct}% • ${fmt(bytes)}`;
+                if (pct !== lastNotifPct && pct % 5 === 0) { lastNotifPct = pct; notify(`${pct}% • ${fmt(bytes)}`); }
             }
         };
         await Promise.all(Array.from({length: 6}, worker));
@@ -1454,10 +1468,12 @@ async function downloadHls(playlistUrl, name) {
         setTimeout(() => URL.revokeObjectURL(a.href), 60000);
         pctEl.innerText = '✅ Done • ' + fmt(bytes);
         bar.style.width = '100%';
+        notify('✅ Download complete • ' + fmt(bytes));
         setTimeout(() => removeDlCard(id), 8000);
     } catch (e) {
         if (!cancelled) {
             pctEl.innerText = '❌ Failed: ' + e.message;
+            notify('❌ Download failed');
             setTimeout(() => removeDlCard(id), 8000);
         }
     }
