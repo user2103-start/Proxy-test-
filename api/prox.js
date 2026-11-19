@@ -2,7 +2,7 @@
 // /api/proxy -> page | /api/proxy?pdf_id=..&course_id=..&parent_id=..&name=.. -> PDF | add &debug=1 for details
 const { Readable } = require("stream");
 
-const FRONT = "https://temp-vibe.egomale82.workers.dev/api/vibe/proxy?url="; // jo pehle chal raha tha
+const FRONT = "https://temp-vibe.egomale82.workers.dev/api/vibe/proxy?url="; // fallback
 const API = "https://vibrant-live-api.lovable.app/api/v1/vibrant/pdf";
 const REFERER = "https://pdfweb.classx.co.in/";
 const UA = "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36";
@@ -34,8 +34,11 @@ module.exports = async (req, res) => {
     });
     const name = (q.get("name") || "notes").replace(/[^\w\- ]/g, "") + ".pdf";
 
-    const txt = (await (await fetch(FRONT + encodeURIComponent(API + "?" + params))).text()).trim();
-    const found = (txt.match(/https?:\/\/[^\s"'<>]+/) || [])[0];
+    const target = API + "?" + params;
+    const H = { "User-Agent": UA, Accept: "*/*" };
+    let txt = (await (await fetch(target, { headers: H })).text()).trim();
+    if (!/https?:\/\//.test(txt)) txt = (await (await fetch(FRONT + encodeURIComponent(target), { headers: H })).text()).trim(); // fallback
+    const found = ((txt.replace(/\\u0026/g, "&").replace(/\\\//g, "/")).match(/https?:\/\/[^\s"'<>\\]+/) || [])[0];
     if (!found) return send(502, "text/plain; charset=utf-8", "PDF link nahi mila. API ne ye diya:\n" + txt.slice(0, 300));
     const pdfUrl = new URL(found).searchParams.get("file") || found;
 
