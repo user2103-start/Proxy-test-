@@ -35,12 +35,24 @@ module.exports = async (req, res) => {
     const name = (q.get("name") || "notes").replace(/[^\w\- ]/g, "") + ".pdf";
 
     const target = API + "?" + params;
-    const H = { "User-Agent": UA, Accept: "*/*" };
-    let txt = (await (await fetch(target, { headers: H })).text()).trim();
-    if (!/https?:\/\//.test(txt)) txt = (await (await fetch(FRONT + encodeURIComponent(target), { headers: H })).text()).trim(); // fallback
-    const found = ((txt.replace(/\\u0026/g, "&").replace(/\\\//g, "/")).match(/https?:\/\/[^\s"'<>\\]+/) || [])[0];
-    if (!found) return send(502, "text/plain; charset=utf-8", "PDF link nahi mila. API ne ye diya:\n" + txt.slice(0, 300));
-    const pdfUrl = new URL(found).searchParams.get("file") || found;
+    const clean = t => t.trim().replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+    const pick = t => {
+      const f = (clean(t).match(/https?:\/\/[^\s"'<>\\]+/) || [])[0];
+      if (!f) return null;
+      const u = new URL(f).searchParams.get("file") || f;
+      return /pdflink\.com/.test(u) ? null : u; // placeholder, asli link nahi
+    };
+    // 1) tumhara Worker (isi se pehle asli link mila tha), 2) seedha API
+    const tries = [
+      [FRONT + encodeURIComponent(target), { "User-Agent": "curl/8.5.0", Accept: "*/*" }],
+      [target, { "User-Agent": UA, Accept: "*/*" }],
+    ];
+    let txt = "", pdfUrl = null;
+    for (const [url, headers] of tries) {
+      txt = await (await fetch(url, { headers })).text();
+      if ((pdfUrl = pick(txt))) break;
+    }
+    if (!pdfUrl) return send(502, "text/plain; charset=utf-8", "Asli PDF link nahi mila (placeholder ya block). Last API response:\n" + txt.slice(0, 400));
 
     const r = await fetch(pdfUrl, { headers: { Referer: REFERER, Origin: "https://pdfweb.classx.co.in", "User-Agent": UA, Accept: "application/pdf,*/*" } });
 
